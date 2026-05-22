@@ -1,1 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<title>Claim Management System - Karachi Shop Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
+:root {
+  --bg-primary: #0a1a0f;
+  --bg-secondary: #0f2415;
+  --bg-card: #163a1d;
+  --bg-hover: #1e4a26;
+  --border: #2a5a35;
+  --text-primary: #e8f0ea;
+  --text-secondary: #a8c4b0;
+  --text-muted: #6a9a76;
+  --accent-green: #22c55e;
+  --accent-dark-green: #15803d;
+  --accent-blue: #3b82f6;
+  --accent-yellow: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-purple: #8b5cf6;
+  --success: #22c55e;
+  --pending: #f59e0b;
+  --resolved: #06b6d4;
+  --verified: #8b5cf6;
+  --rejected: #ef4444;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Auth Page */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0a1a0f 0%, #0f2415 100%);
+  padding: 20px;
+}
+
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.logo {
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--accent-green);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--accent-green);
+}
+
+.auth-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+/* App Container */
+#app-container {
+  display: none;
+  min-height: 100vh;
+}
+
+/* Top Bar */
+.topbar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.role-badge {
+  background: var(--accent-green);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #0a1a0f;
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+/* Layout */
+.layout {
+  display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  min-height: calc(100vh - 57px);
+  padding: 20px 0;
+}
+
+.nav-item {
+  padding: 12px 20px;
+  margin: 4px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: var(--accent-green);
+  color: #0a1a0f;
+}
+
+.nav-icon {
+  font-size: 20px;
+  width: 24px;
+}
+
+.nav-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-section {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  padding: 16px 20px 8px;
+  font-weight: 600;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(100vh - 57px);
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.page-desc {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  border-color: var(--accent-green);
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.stat-value.pending { color: var(--pending); }
+.stat-value.resolved { color: var(--resolved); }
+.stat-value.verified { color: var(--verified); }
+.stat-value.total { color: var(--accent-green); }
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Task Cards */
+.task-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.task-card:hover {
+  border-color: var(--accent-green);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.task-shop {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.task-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--pending);
+}
+
+.status-resolved {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--resolved);
+}
+
+.status-verified {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--verified);
+}
+
+.status-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--rejected);
+}
+
+.task-details {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.task-details p {
+  margin: 4px 0;
+}
+
+.task-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: var(--accent-green);
+  color: #0a1a0f;
+}
+
+.btn-primary:hover {
+  background: var(--accent-dark-green);
+}
+
+.btn-success {
+  background: var(--success);
+  color: #0a1a0f;
+}
+
+.btn-success:hover {
+  background: #16a34a;
+}
+
+.btn-warning {
+  background: var(--pending);
+  color: #0a1a0f;
+}
+
+.btn-danger {
+  background: var(--accent-red);
+  color: white;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-green);
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--accent-green);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* Tables */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg-hover);
+}
+
+tr:hover td {
+  background: rgba(34, 197, 94, 0.05);
+}
+
+/* Search Bar */
+.search-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.filter-select {
+  padding: 10px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  min-width: 150px;
+}
+
+/* Photo Preview */
+.photo-preview {
+  margin-top: 12px;
+  max-width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.photo-preview img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 16px;
+}
+
+.page-btn {
+  padding: 6px 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.page-btn:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.page-btn.active {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: #0a1a0f;
+}
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .main-content {
+    padding: 16px;
+    margin-bottom: 60px;
+  }
+  
+  .task-header {
+    flex-direction: column;
+  }
+  
+  .search-bar, .filter-bar {
+    flex-direction: column;
+  }
+  
+  .search-input, .filter-select {
+    width: 100%;
+  }
+}
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  z-index: 100;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: flex;
+    justify-content: space-around;
+  }
+  
+  .bottom-nav-item {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+  
+  .bottom-nav-item.active {
+    background: var(--accent-green);
+    color: #0a1a0f;
+  }
+  
+  .bottom-nav-icon {
+    font-size: 20px;
+    display: block;
+    margin-bottom: 2px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Login Page -->
+<div id="login-page" class="auth-container">
+  <div class="auth-card">
+    <div class="logo">CLAIM TRACKER PRO</div>
+    <div class="auth-title">Welcome Back</div>
+    <div class="auth-subtitle">Sign in to manage your claim tasks</div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="Enter your username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Enter your password" onkeypress="if(event.key==='Enter') login()">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="login()">Sign In →</button>
+    <div id="login-error" style="color: var(--accent-red); font-size: 12px; margin-top: 16px; text-align: center;"></div>
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+      <p style="font-size: 11px; color: var(--text-muted); text-align: center;">Demo Credentials:</p>
+      <p style="font-size: 11px; color: var(--text-muted); text-align: center;">Admin: admin / admin123 | Claim Team: claim1 / claim123</p>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app-container">
+  <div class="topbar">
+    <div class="brand">🌿 Claim Tracker Pro | Karachi</div>
+    <div class="user-info">
+      <span id="current-username"></span>
+      <span class="role-badge" id="current-role"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="nav-item" data-page="dashboard" onclick="showPage('dashboard')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="tasks" onclick="showPage('tasks')">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">My Tasks</span>
+      </div>
+      <div id="admin-nav" style="display: none;">
+        <div class="nav-section">Admin Panel</div>
+        <div class="nav-item" data-page="assign" onclick="showPage('assign')">
+          <span class="nav-icon">➕</span>
+          <span class="nav-label">Assign Task</span>
+        </div>
+        <div class="nav-item" data-page="all-tasks" onclick="showPage('all-tasks')">
+          <span class="nav-icon">🗂️</span>
+          <span class="nav-label">All Tasks</span>
+        </div>
+        <div class="nav-item" data-page="shops" onclick="showPage('shops')">
+          <span class="nav-icon">🏪</span>
+          <span class="nav-label">Shops</span>
+        </div>
+        <div class="nav-item" data-page="products" onclick="showPage('products')">
+          <span class="nav-icon">📦</span>
+          <span class="nav-label">Products</span>
+        </div>
+        <div class="nav-item" data-page="users" onclick="showPage('users')">
+          <span class="nav-icon">👥</span>
+          <span class="nav-label">Users</span>
+        </div>
+      </div>
+      <div class="nav-item" data-page="reports" onclick="showPage('reports')">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Reports</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Dashboard Page -->
+      <div id="dashboard-page" class="page active">
+        <div class="page-header">
+          <div class="page-title">Dashboard</div>
+          <div class="page-desc">Welcome back! Here's your claims overview</div>
+        </div>
+        <div class="stats-grid" id="stats-container"></div>
+        <div id="recent-tasks-container"></div>
+      </div>
+
+      <!-- My Tasks Page -->
+      <div id="tasks-page" class="page">
+        <div class="page-header">
+          <div class="page-title">My Tasks</div>
+          <div class="page-desc">Tasks assigned to you</div>
+        </div>
+        <div id="my-tasks-container"></div>
+      </div>
+
+      <!-- Assign Task Page (Admin only) -->
+      <div id="assign-page" class="page">
+        <div class="page-header">
+          <div class="page-title">Assign New Claim Task</div>
+          <div class="page-desc">Create a claim request and assign to claim team member</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Task Details</div>
+          </div>
+          <div style="padding: 20px;">
+            <div class="form-group">
+              <label>Select Shop</label>
+              <select id="assign-shop" class="filter-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Select Product</label>
+              <select id="assign-product" class="filter-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Assign To (Claim Team)</label>
+              <select id="assign-user" class="filter-select"></select>
+            </div>
+            <div class="form-group">
+              <label>Issue Description</label>
+              <textarea id="assign-description" rows="3" placeholder="Describe the issue with the product..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="assignTask()">Assign Task →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- All Tasks Page (Admin only) -->
+      <div id="all-tasks-page" class="page">
+        <div class="page-header">
+          <div class="page-title">All Claim Tasks</div>
+          <div class="page-desc">Manage and verify all claim tasks</div>
+        </div>
+        <div id="all-tasks-container"></div>
+      </div>
+
+      <!-- Shops Page (Admin only) -->
+      <div id="shops-page" class="page">
+        <div class="page-header">
+          <div class="page-title">All Shops</div>
+          <div class="page-desc">Manage all shops in the system</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Shops Database</div>
+            <button class="btn btn-primary" onclick="openAddShopModal()">+ Add New Shop</button>
+          </div>
+          <div style="padding: 0 20px 20px 20px;">
+            <div class="search-bar">
+              <input type="text" class="search-input" id="shop-search" placeholder="🔍 Search by shop name..." onkeyup="loadShops()">
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Shop Name</th><th>Booker</th><th>Added Date</th></tr>
+                </thead>
+                <tbody id="shops-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Page (Admin only) -->
+      <div id="products-page" class="page">
+        <div class="page-header">
+          <div class="page-title">Products Catalog</div>
+          <div class="page-desc">All available products for claims</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Products Database</div>
+            <button class="btn btn-primary" onclick="openAddProductModal()">+ Add New Product</button>
+          </div>
+          <div style="padding: 0 20px 20px 20px;">
+            <div class="search-bar">
+              <input type="text" class="search-input" id="product-search" placeholder="🔍 Search products..." onkeyup="loadProducts()">
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Product Name</th><th>Rate (PKR)</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="products-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Page (Admin only) -->
+      <div id="users-page" class="page">
+        <div class="page-header">
+          <div class="page-title">User Management</div>
+          <div class="page-desc">Manage claim team members</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Claim Team Accounts</div>
+            <button class="btn btn-primary" onclick="openAddUserModal()">+ Add User</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr><th>Username</th><th>Role</th><th>Tasks</th><th>Completed</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="users-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reports Page -->
+      <div id="reports-page" class="page">
+        <div class="page-header">
+          <div class="page-title">Reports</div>
+          <div class="page-desc">Generate and export claim reports</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Filter Reports</div>
+          </div>
+          <div style="padding: 20px;">
+            <div class="filter-bar">
+              <input type="date" class="filter-select" id="report-from">
+              <input type="date" class="filter-select" id="report-to">
+              <select class="filter-select" id="report-status">
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="resolved">Resolved</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <button class="btn btn-primary" onclick="generateReport()">Generate</button>
+              <button class="btn btn-success" onclick="exportReport()">📊 Export Excel</button>
+            </div>
+          </div>
+        </div>
+        <div id="report-results"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation (Mobile) -->
+  <div class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav-item" data-page="dashboard" onclick="showPage('dashboard')">
+      <span class="bottom-nav-icon">📊</span>
+      <span>Dash</span>
+    </div>
+    <div class="bottom-nav-item" data-page="tasks" onclick="showPage('tasks')">
+      <span class="bottom-nav-icon">📋</span>
+      <span>Tasks</span>
+    </div>
+    <div class="bottom-nav-item" data-page="reports" onclick="showPage('reports')">
+      <span class="bottom-nav-icon">📈</span>
+      <span>Reports</span>
+    </div>
+  </div>
+</div>
+
+<!-- Resolve Task Modal -->
+<div id="resolve-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Resolve Claim Task</div>
+    <div class="form-group">
+      <label>Resolution Notes</label>
+      <textarea id="resolve-notes" rows="3" placeholder="Describe how the issue was resolved..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Upload Proof Photo</label>
+      <input type="file" id="resolve-photo" accept="image/*" onchange="previewPhoto(this)">
+      <div id="photo-preview" class="photo-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('resolve-modal')">Cancel</button>
+      <button class="btn btn-success" onclick="submitResolution()">Submit Resolution</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Task Modal -->
+<div id="view-modal" class="modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">Task Details</div>
+    <div id="view-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('view-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Shop Modal -->
+<div id="addshop-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Add New Shop</div>
+    <div class="form-group">
+      <label>Shop Name</label>
+      <input type="text" id="new-shop-name" placeholder="Enter shop name">
+    </div>
+    <div class="form-group">
+      <label>Booker Name</label>
+      <input type="text" id="new-shop-booker" placeholder="Enter booker name">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addshop-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addNewShop()">Add Shop</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Product Modal -->
+<div id="addproduct-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Add New Product</div>
+    <div class="form-group">
+      <label>Product Name</label>
+      <input type="text" id="new-product-name" placeholder="Enter product name">
+    </div>
+    <div class="form-group">
+      <label>Rate (PKR)</label>
+      <input type="number" id="new-product-rate" placeholder="Enter rate in PKR">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('addproduct-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addNewProduct()">Add Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="adduser-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Add New User</div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="new-username" placeholder="Enter username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="new-password" placeholder="Enter password">
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="new-role">
+        <option value="claim">Claim Team</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('adduser-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addNewUser()">Add User</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// SUPABASE CONFIGURATION
+// ============================================
+const SUPABASE_URL = 'https://hgxrzuiaweloeeafjmag.supabase.co/rest/v1/';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneHJ6dWlhd2Vsb2VlYWZqbWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDk3MDgsImV4cCI6MjA5NTAyNTcwOH0.8Mc6TnKcLzCAI-9edaq--bcDi3_1izOktpi4p7ghdPU';
+
+const supabase = supabaseClient.createClient(https://hgxrzuiaweloeeafjmag.supabase.co/rest/v1/, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneHJ6dWlhd2Vsb2VlYWZqbWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NDk3MDgsImV4cCI6MjA5NTAyNTcwOH0.8Mc6TnKcLzCAI-9edaq--bcDi3_1izOktpi4p7ghdPU);
+
+// ============================================
+// GLOBAL VARIABLES
+// ============================================
+let currentUser = null;
+let currentResolveTask = null;
+let allShops = [];
+let allProducts = [];
+let allTasks = [];
+let allUsers = [];
+
+// ============================================
+// AUTHENTICATION
+// ============================================
+async function login() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorDiv = document.getElementById('login-error');
+  
+  if (!username || !password) {
+    errorDiv.textContent = 'Please enter username and password';
+    return;
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('claim_users')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password)
+      .single();
+    
+    if (error || !data) {
+      errorDiv.textContent = 'Invalid username or password';
+      return;
+    }
+    
+    currentUser = data;
+    
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+    document.getElementById('current-username').textContent = currentUser.username;
+    document.getElementById('current-role').textContent = currentUser.role === 'admin' ? 'ADMIN' : 'CLAIM TEAM';
+    
+    // Show/hide admin nav
+    const isAdmin = currentUser.role === 'admin';
+    document.getElementById('admin-nav').style.display = isAdmin ? 'block' : 'none';
+    
+    // Load all data
+    await loadAllData();
+    
+    // Setup realtime subscription
+    setupRealtime();
+    
+    // Show dashboard
+    showPage('dashboard');
+    
+  } catch (e) {
+    errorDiv.textContent = 'Connection error. Check your internet.';
+    console.error(e);
+  }
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('app-container').style.display = 'none';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+// ============================================
+// DATA LOADING
+// ============================================
+async function loadAllData() {
+  await Promise.all([
+    loadShops(),
+    loadProducts(),
+    loadTasks(),
+    loadUsers()
+  ]);
+}
+
+async function loadShops() {
+  const { data, error } = await supabase.from('claim_shops').select('*').order('id');
+  if (!error && data) {
+    allShops = data;
+    renderShops();
+    renderAssignDropdowns();
+  }
+}
+
+async function loadProducts() {
+  const { data, error } = await supabase.from('claim_products').select('*').order('name');
+  if (!error && data) {
+    allProducts = data;
+    renderProducts();
+    renderAssignDropdowns();
+  }
+}
+
+async function loadTasks() {
+  const { data, error } = await supabase.from('claim_tasks').select('*').order('assigned_at', { ascending: false });
+  if (!error && data) {
+    allTasks = data;
+    renderDashboard();
+    renderMyTasks();
+    if (currentUser?.role === 'admin') {
+      renderAllTasks();
+    }
+  }
+}
+
+async function loadUsers() {
+  const { data, error } = await supabase.from('claim_users').select('*');
+  if (!error && data) {
+    allUsers = data;
+    if (currentUser?.role === 'admin') {
+      renderUsers();
+      renderAssignDropdowns();
+    }
+  }
+}
+
+// ============================================
+// REALTIME SUBSCRIPTION
+// ============================================
+function setupRealtime() {
+  supabase
+    .channel('tasks_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'claim_tasks' }, () => {
+      loadTasks();
+    })
+    .subscribe();
+}
+
+// ============================================
+// PAGE NAVIGATION
+// ============================================
+function showPage(pageName) {
+  document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+  document.getElementById(`${pageName}-page`).classList.add('active');
+  
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  document.querySelectorAll(`.nav-item[data-page="${pageName}"]`).forEach(item => item.classList.add('active'));
+  
+  if (pageName === 'dashboard') renderDashboard();
+  if (pageName === 'tasks') renderMyTasks();
+  if (pageName === 'all-tasks' && currentUser?.role === 'admin') renderAllTasks();
+  if (pageName === 'shops') renderShops();
+  if (pageName === 'products') renderProducts();
+  if (pageName === 'users') renderUsers();
+  if (pageName === 'reports') {
+    const today = new Date().toISOString().slice(0,10);
+    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+    document.getElementById('report-from').value = weekAgo;
+    document.getElementById('report-to').value = today;
+    generateReport();
+  }
+  if (pageName === 'assign' && currentUser?.role === 'admin') {
+    renderAssignDropdowns();
+  }
+}
+
+// ============================================
+// DASHBOARD
+// ============================================
+function renderDashboard() {
+  const myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => t.assigned_to === currentUser.username);
+  const pending = myTasks.filter(t => t.status === 'pending').length;
+  const resolved = myTasks.filter(t => t.status === 'resolved').length;
+  const verified = myTasks.filter(t => t.status === 'verified').length;
+  
+  document.getElementById('stats-container').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Pending Tasks</div><div class="stat-value pending">${pending}</div></div>
+    <div class="stat-card"><div class="stat-label">Resolved</div><div class="stat-value resolved">${resolved}</div></div>
+    <div class="stat-card"><div class="stat-label">Verified</div><div class="stat-value verified">${verified}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Tasks</div><div class="stat-value total">${myTasks.length}</div></div>
+  `;
+  
+  const recentTasks = myTasks.slice(0, 5);
+  let html = `<div class="card"><div class="card-header"><div class="card-title">Recent Tasks</div></div>`;
+  
+  if (recentTasks.length === 0) {
+    html += `<div class="empty-state"><div class="empty-icon">📭</div><div>No tasks yet</div></div>`;
+  } else {
+    recentTasks.forEach(task => {
+      const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
+      html += `
+        <div class="task-card">
+          <div class="task-header">
+            <span class="task-shop">${shop.name.substring(0, 50)}${shop.name.length > 50 ? '...' : ''}</span>
+            <span class="task-status status-${task.status}">${task.status}</span>
+          </div>
+          <div class="task-details">
+            <p>📦 Product: ${task.product_name}</p>
+            <p>👤 Assigned to: ${task.assigned_to}</p>
+            <p>📅 Assigned: ${new Date(task.assigned_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `;
+    });
+  }
+  html += `</div>`;
+  document.getElementById('recent-tasks-container').innerHTML = html;
+}
+
+// ============================================
+// MY TASKS (Claim Team View)
+// ============================================
+function renderMyTasks() {
+  const myTasks = allTasks.filter(t => t.assigned_to === currentUser.username);
+  const container = document.getElementById('my-tasks-container');
+  
+  if (myTasks.length === 0) {
+    container.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📭</div><div>No tasks assigned to you</div></div></div>`;
+    return;
+  }
+  
+  let html = '';
+  for (const task of myTasks) {
+    const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
+    html += `
+      <div class="task-card">
+        <div class="task-header">
+          <span class="task-shop">${shop.name}</span>
+          <span class="task-status status-${task.status}">${task.status}</span>
+        </div>
+        <div class="task-details">
+          <p>📦 Product: ${task.product_name}</p>
+          <p>📝 Issue: ${task.issue_description || 'No description'}</p>
+          <p>📅 Assigned: ${new Date(task.assigned_at).toLocaleString()}</p>
+        </div>
+        <div class="task-actions">
+          ${task.status === 'pending' ? `<button class="btn btn-success" onclick="openResolveModal('${task.id}')">✓ Mark Resolved</button>` : ''}
+          ${task.status === 'resolved' ? `<span style="color: var(--pending);">⏳ Waiting for admin verification...</span>` : ''}
+          <button class="btn btn-outline" onclick="viewTaskDetails('${task.id}')">View Details</button>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+// ============================================
+// ALL TASKS (Admin View)
+// ============================================
+function renderAllTasks() {
+  const container = document.getElementById('all-tasks-container');
+  
+  if (allTasks.length === 0) {
+    container.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📭</div><div>No tasks created yet</div></div></div>`;
+    return;
+  }
+  
+  let html = '';
+  for (const task of allTasks) {
+    const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
+    html += `
+      <div class="task-card">
+        <div class="task-header">
+          <span class="task-shop">${shop.name.substring(0, 60)}${shop.name.length > 60 ? '...' : ''}</span>
+          <span class="task-status status-${task.status}">${task.status}</span>
+        </div>
+        <div class="task-details">
+          <p>📦 Product: ${task.product_name}</p>
+          <p>👤 Assigned to: ${task.assigned_to}</p>
+          <p>📅 Assigned: ${new Date(task.assigned_at).toLocaleString()}</p>
+          ${task.resolution_notes ? `<p>📝 Resolution: ${task.resolution_notes}</p>` : ''}
+        </div>
+        <div class="task-actions">
+          ${task.status === 'resolved' ? `
+            <button class="btn btn-success" onclick="verifyTask('${task.id}', true)">✓ Verify & Close</button>
+            <button class="btn btn-danger" onclick="verifyTask('${task.id}', false)">✗ Reject</button>
+          ` : ''}
+          ${task.photo_url ? `<button class="btn btn-outline" onclick="viewPhoto('${task.photo_url}')">📷 View Photo</button>` : ''}
+          <button class="btn btn-outline" onclick="viewTaskDetails('${task.id}')">View Details</button>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+// ============================================
+// TASK RESOLUTION
+// ============================================
+function openResolveModal(taskId) {
+  currentResolveTask = taskId;
+  document.getElementById('resolve-notes').value = '';
+  document.getElementById('photo-preview').innerHTML = '';
+  openModal('resolve-modal');
+}
+
+function previewPhoto(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('photo-preview').innerHTML = `<img src="${e.target.result}">`;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+async function submitResolution() {
+  const notes = document.getElementById('resolve-notes').value;
+  const photoFile = document.getElementById('resolve-photo').files[0];
+  
+  if (!notes) {
+    alert('Please enter resolution notes');
+    return;
+  }
+  
+  let photoUrl = null;
+  if (photoFile) {
+    const reader = new FileReader();
+    photoUrl = await new Promise((resolve) => {
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(photoFile);
+    });
+  }
+  
+  const { error } = await supabase
+    .from('claim_tasks')
+    .update({
+      status: 'resolved',
+      resolved_at: new Date().toISOString(),
+      resolution_notes: notes,
+      photo_url: photoUrl
+    })
+    .eq('id', currentResolveTask);
+  
+  if (error) {
+    alert('Error submitting resolution');
+    return;
+  }
+  
+  closeModal('resolve-modal');
+  await loadTasks();
+  showPage('tasks');
+  alert('Task marked as resolved! Waiting for admin verification.');
+}
+
+// ============================================
+// TASK VERIFICATION (Admin)
+// ============================================
+async function verifyTask(taskId, approved) {
+  const status = approved ? 'verified' : 'rejected';
+  
+  const { error } = await supabase
+    .from('claim_tasks')
+    .update({
+      status: status,
+      verified_at: new Date().toISOString()
+    })
+    .eq('id', taskId);
+  
+  if (error) {
+    alert('Error updating task');
+    return;
+  }
+  
+  await loadTasks();
+  alert(approved ? 'Task verified successfully!' : 'Task rejected.');
+}
+
+// ============================================
+// TASK ASSIGNMENT (Admin)
+// ============================================
+function renderAssignDropdowns() {
+  const shopSelect = document.getElementById('assign-shop');
+  const productSelect = document.getElementById('assign-product');
+  const userSelect = document.getElementById('assign-user');
+  
+  shopSelect.innerHTML = '<option value="">Select a shop...</option>' + 
+    allShops.map(s => `<option value="${s.id}">${s.name.substring(0, 70)}...</option>`).join('');
+  
+  productSelect.innerHTML = '<option value="">Select a product...</option>' +
+    allProducts.map(p => `<option value="${p.name}">${p.name} (PKR ${p.rate})</option>`).join('');
+  
+  const claimUsers = allUsers.filter(u => u.role === 'claim');
+  userSelect.innerHTML = '<option value="">Select claim team...</option>' +
+    claimUsers.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+}
+
+async function assignTask() {
+  const shopId = document.getElementById('assign-shop').value;
+  const productName = document.getElementById('assign-product').value;
+  const assignedTo = document.getElementById('assign-user').value;
+  const description = document.getElementById('assign-description').value;
+  
+  if (!shopId || !productName || !assignedTo) {
+    alert('Please fill all required fields');
+    return;
+  }
+  
+  const newTask = {
+    id: Date.now().toString(),
+    shop_id: parseInt(shopId),
+    product_name: productName,
+    assigned_to: assignedTo,
+    assigned_by: currentUser.username,
+    issue_description: description,
+    status: 'pending',
+    assigned_at: new Date().toISOString()
+  };
+  
+  const { error } = await supabase.from('claim_tasks').insert(newTask);
+  
+  if (error) {
+    alert('Error assigning task');
+    return;
+  }
+  
+  document.getElementById('assign-description').value = '';
+  await loadTasks();
+  alert('Task assigned successfully!');
+  showPage('dashboard');
+}
+
+// ============================================
+// VIEW TASK DETAILS
+// ============================================
+async function viewTaskDetails(taskId) {
+  const task = allTasks.find(t => t.id === taskId);
+  if (!task) return;
+  
+  const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
+  const product = allProducts.find(p => p.name === task.product_name) || { name: task.product_name, rate: 'N/A' };
+  
+  let html = `<div style="padding: 4px;">`;
+  html += `<div class="form-group"><label>Shop</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${shop.name}</div></div>`;
+  html += `<div class="form-group"><label>Product</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.product_name} ${product.rate !== 'N/A' ? `(PKR ${product.rate})` : ''}</div></div>`;
+  html += `<div class="form-group"><label>Issue Description</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.issue_description || 'No description'}</div></div>`;
+  html += `<div class="form-group"><label>Status</label><div><span class="task-status status-${task.status}">${task.status.toUpperCase()}</span></div></div>`;
+  html += `<div class="form-group"><label>Assigned To</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.assigned_to}</div></div>`;
+  html += `<div class="form-group"><label>Assigned At</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${new Date(task.assigned_at).toLocaleString()}</div></div>`;
+  if (task.resolved_at) {
+    html += `<div class="form-group"><label>Resolved At</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${new Date(task.resolved_at).toLocaleString()}</div></div>`;
+  }
+  if (task.resolution_notes) {
+    html += `<div class="form-group"><label>Resolution Notes</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.resolution_notes}</div></div>`;
+  }
+  if (task.photo_url) {
+    html += `<div class="form-group"><label>Proof Photo</label><div><img src="${task.photo_url}" style="max-width: 100%; border-radius: 8px;"></div></div>`;
+  }
+  html += `</div>`;
+  
+  document.getElementById('view-modal-body').innerHTML = html;
+  openModal('view-modal');
+}
+
+function viewPhoto(photoUrl) {
+  const win = window.open();
+  win.document.write(`<img src="${photoUrl}" style="max-width: 100%; background: #000;">`);
+}
+
+// ============================================
+// SHOPS MANAGEMENT (Admin)
+// ============================================
+let shopSearchTerm = '';
+
+function renderShops() {
+  let filteredShops = allShops;
+  if (shopSearchTerm) {
+    filteredShops = allShops.filter(s => s.name.toLowerCase().includes(shopSearchTerm.toLowerCase()));
+  }
+  
+  const tbody = document.getElementById('shops-table');
+  tbody.innerHTML = filteredShops.map((shop, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td style="max-width: 500px;">${shop.name}</td>
+      <td style="color: var(--accent-green);">${shop.booker}</td>
+      <td style="color: var(--text-muted); font-size: 12px;">${new Date(shop.created_at).toLocaleDateString() || '2024-01-01'}</td>
+    </tr>
+  `).join('');
+  
+  if (filteredShops.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No shops found</td></tr>`;
+  }
+  
+  document.getElementById('shop-search').addEventListener('input', (e) => {
+    shopSearchTerm = e.target.value;
+    renderShops();
+  });
+}
+
+function openAddShopModal() {
+  document.getElementById('new-shop-name').value = '';
+  document.getElementById('new-shop-booker').value = '';
+  openModal('addshop-modal');
+}
+
+async function addNewShop() {
+  const name = document.getElementById('new-shop-name').value.trim();
+  const booker = document.getElementById('new-shop-booker').value.trim();
+  
+  if (!name) {
+    alert('Please enter shop name');
+    return;
+  }
+  
+  const { error } = await supabase.from('claim_shops').insert({ name, booker: booker || 'UNASSIGNED' });
+  
+  if (error) {
+    alert('Error adding shop');
+    return;
+  }
+  
+  await loadShops();
+  closeModal('addshop-modal');
+  alert('Shop added successfully!');
+}
+
+// ============================================
+// PRODUCTS MANAGEMENT (Admin)
+// ============================================
+let productSearchTerm = '';
+
+function renderProducts() {
+  let filteredProducts = allProducts;
+  if (productSearchTerm) {
+    filteredProducts = allProducts.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase()));
+  }
+  
+  const tbody = document.getElementById('products-table');
+  tbody.innerHTML = filteredProducts.map((product, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td style="font-weight: 500;">${product.name}</td>
+      <td style="color: var(--accent-green);">PKR ${product.rate.toLocaleString()}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteProduct(${product.id})">Delete</button></td>
+    </tr>
+  `).join('');
+  
+  document.getElementById('product-search').addEventListener('input', (e) => {
+    productSearchTerm = e.target.value;
+    renderProducts();
+  });
+}
+
+function openAddProductModal() {
+  document.getElementById('new-product-name').value = '';
+  document.getElementById('new-product-rate').value = '';
+  openModal('addproduct-modal');
+}
+
+async function addNewProduct() {
+  const name = document.getElementById('new-product-name').value.trim();
+  const rate = parseInt(document.getElementById('new-product-rate').value);
+  
+  if (!name || !rate) {
+    alert('Please enter product name and rate');
+    return;
+  }
+  
+  const { error } = await supabase.from('claim_products').insert({ name, rate });
+  
+  if (error) {
+    alert('Error adding product');
+    return;
+  }
+  
+  await loadProducts();
+  closeModal('addproduct-modal');
+  alert('Product added successfully!');
+}
+
+async function deleteProduct(productId) {
+  if (!confirm('Are you sure you want to delete this product?')) return;
+  
+  const { error } = await supabase.from('claim_products').delete().eq('id', productId);
+  
+  if (error) {
+    alert('Error deleting product');
+    return;
+  }
+  
+  await loadProducts();
+}
+
+// ============================================
+// USER MANAGEMENT (Admin)
+// ============================================
+function renderUsers() {
+  const claimUsers = allUsers.filter(u => u.role === 'claim');
+  const tbody = document.getElementById('users-table');
+  
+  tbody.innerHTML = claimUsers.map(user => {
+    const userTasks = allTasks.filter(t => t.assigned_to === user.username);
+    const completed = userTasks.filter(t => t.status === 'verified').length;
+    return `
+      <tr>
+        <td><span style="font-weight: 500;">${user.username}</span></td>
+        <td><span class="role-badge" style="background: var(--accent-purple);">Claim Team</span></td>
+        <td>${userTasks.length}</td>
+        <td>${completed}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">Delete</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openAddUserModal() {
+  document.getElementById('new-username').value = '';
+  document.getElementById('new-password').value = '';
+  document.getElementById('new-role').value = 'claim';
+  openModal('adduser-modal');
+}
+
+async function addNewUser() {
+  const username = document.getElementById('new-username').value.trim();
+  const password = document.getElementById('new-password').value;
+  const role = document.getElementById('new-role').value;
+  
+  if (!username || !password) {
+    alert('Please enter username and password');
+    return;
+  }
+  
+  const { error } = await supabase.from('claim_users').insert({ username, password, role });
+  
+  if (error) {
+    alert('Error adding user');
+    return;
+  }
+  
+  await loadUsers();
+  closeModal('adduser-modal');
+  alert('User added successfully!');
+}
+
+async function deleteUser(username) {
+  if (!confirm(`Delete user "${username}"?`)) return;
+  
+  const { error } = await supabase.from('claim_users').delete().eq('username', username);
+  
+  if (error) {
+    alert('Error deleting user');
+    return;
+  }
+  
+  await loadUsers();
+}
+
+// ============================================
+// REPORTS
+// ============================================
+let currentReportData = [];
+
+async function generateReport() {
+  const fromDate = document.getElementById('report-from').value;
+  const toDate = document.getElementById('report-to').value;
+  const status = document.getElementById('report-status').value;
+  
+  let filtered = [...allTasks];
+  
+  if (fromDate) filtered = filtered.filter(t => t.assigned_at >= fromDate);
+  if (toDate) filtered = filtered.filter(t => t.assigned_at <= toDate + 'T23:59:59');
+  if (status !== 'all') filtered = filtered.filter(t => t.status === status);
+  
+  currentReportData = filtered;
+  
+  const container = document.getElementById('report-results');
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📭</div><div>No tasks found</div></div></div>`;
+    return;
+  }
+  
+  let html = `<div class="card"><div class="table-wrapper"><table><thead><tr>`;
+  html += `<th>#</th><th>Shop</th><th>Product</th><th>Assigned To</th><th>Status</th><th>Assigned Date</th><th>Resolved Date</th></tr></thead><tbody>`;
+  
+  for (let i = 0; i < filtered.length; i++) {
+    const task = filtered[i];
+    const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown' };
+    html += `
+      <tr>
+        <td>${i + 1}</td>
+        <td style="max-width: 250px;">${shop.name.substring(0, 50)}${shop.name.length > 50 ? '...' : ''}</td>
+        <td>${task.product_name}</td>
+        <td>${task.assigned_to}</td>
+        <td><span class="task-status status-${task.status}">${task.status}</span></td>
+        <td style="font-size: 12px;">${new Date(task.assigned_at).toLocaleDateString()}</td>
+        <td style="font-size: 12px;">${task.resolved_at ? new Date(task.resolved_at).toLocaleDateString() : '-'}</td>
+      </tr>
+    `;
+  }
+  
+  html += `</tbody></table></div></div>`;
+  container.innerHTML = html;
+}
+
+function exportReport() {
+  if (currentReportData.length === 0) {
+    alert('Please generate a report first');
+    return;
+  }
+  
+  const rows = [['#', 'Shop Name', 'Product Name', 'Assigned To', 'Status', 'Assigned Date', 'Resolved Date', 'Resolution Notes']];
+  
+  currentReportData.forEach((task, idx) => {
+    const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown' };
+    rows.push([
+      idx + 1,
+      shop.name,
+      task.product_name,
+      task.assigned_to,
+      task.status,
+      new Date(task.assigned_at).toLocaleString(),
+      task.resolved_at ? new Date(task.resolved_at).toLocaleString() : '',
+      task.resolution_notes || ''
+    ]);
+  });
+  
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, 'Claim Report');
+  XLSX.writeFile(wb, `Claim_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ============================================
+// MODAL HELPERS
+// ============================================
+function openModal(modalId) {
+  document.getElementById(modalId).classList.add('active');
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.remove('active');
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal')) {
+    e.target.classList.remove('active');
+  }
+});
+
+// Initialize
+async function init() {
+  const today = new Date().toISOString().slice(0,10);
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+  document.getElementById('report-from').value = weekAgo;
+  document.getElementById('report-to').value = today;
+}
+
+init();
+</script>
+</body>
+</html>
