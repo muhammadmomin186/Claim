@@ -1,1750 +1,562 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Claim Management System | Karachi Shop Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-dark: #0a1a0f;
-            --bg-card: #0f2415;
-            --bg-surface: #163a1d;
-            --bg-hover: #1e4a26;
-            --border: #2a5a35;
-            --text-primary: #e8f0ea;
-            --text-secondary: #a8c4b0;
-            --text-muted: #6a9a76;
-            --green-primary: #22c55e;
-            --green-dark: #15803d;
-            --yellow: #f59e0b;
-            --blue: #06b6d4;
-            --purple: #8b5cf6;
-            --red: #ef4444;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-
-        /* Auth Page */
-        .auth-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #0a1a0f 0%, #0f2415 100%);
-            padding: 20px;
-        }
-
-        .auth-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .logo {
-            font-size: 12px;
-            letter-spacing: 3px;
-            color: var(--green-primary);
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .auth-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--green-primary);
-        }
-
-        .auth-subtitle {
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-bottom: 32px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 14px;
-            background: var(--bg-hover);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 14px;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--green-primary);
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            font-family: inherit;
-        }
-
-        .btn-primary {
-            background: var(--green-primary);
-            color: var(--bg-dark);
-            width: 100%;
-        }
-
-        .btn-primary:hover {
-            background: var(--green-dark);
-        }
-
-        .btn-success {
-            background: var(--green-primary);
-            color: var(--bg-dark);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-        }
-
-        .btn-outline:hover {
-            border-color: var(--green-primary);
-            color: var(--green-primary);
-        }
-
-        .btn-danger {
-            background: var(--red);
-            color: white;
-        }
-
-        .error {
-            color: var(--red);
-            font-size: 12px;
-            margin-top: 12px;
-            text-align: center;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* App Layout */
-        #app-container {
-            min-height: 100vh;
-        }
-
-        .topbar {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .brand {
-            font-size: 20px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--green-primary), var(--green-dark));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .role-badge {
-            background: var(--green-primary);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--bg-dark);
-        }
-
-        .btn-logout {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            padding: 6px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-
-        .btn-logout:hover {
-            border-color: var(--red);
-            color: var(--red);
-        }
-
-        .layout {
-            display: flex;
-        }
-
-        .sidebar {
-            width: 260px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            min-height: calc(100vh - 57px);
-            padding: 20px 0;
-        }
-
-        .nav-item {
-            padding: 12px 20px;
-            margin: 4px 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-        }
-
-        .nav-item:hover {
-            background: var(--bg-hover);
-            color: var(--text-primary);
-        }
-
-        .nav-item.active {
-            background: var(--green-primary);
-            color: var(--bg-dark);
-        }
-
-        .nav-icon {
-            font-size: 20px;
-        }
-
-        .nav-section {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            padding: 16px 20px 8px;
-            font-weight: 600;
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 24px;
-            overflow-y: auto;
-            max-height: calc(100vh - 57px);
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        .page-header {
-            margin-bottom: 24px;
-        }
-
-        .page-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .page-desc {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            transition: all 0.2s;
-        }
-
-        .stat-card:hover {
-            border-color: var(--green-primary);
-            transform: translateY(-2px);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-        }
-
-        .stat-pending { color: var(--yellow); }
-        .stat-resolved { color: var(--blue); }
-        .stat-verified { color: var(--purple); }
-        .stat-total { color: var(--green-primary); }
-
-        /* Cards */
-        .card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            font-weight: 600;
-        }
-
-        /* Task Cards */
-        .task-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            transition: all 0.2s;
-        }
-
-        .task-card:hover {
-            border-color: var(--green-primary);
-        }
-
-        .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .task-shop {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .task-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-pending { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
-        .status-resolved { background: rgba(6, 182, 212, 0.15); color: var(--blue); }
-        .status-verified { background: rgba(139, 92, 246, 0.15); color: var(--purple); }
-        .status-rejected { background: rgba(239, 68, 68, 0.15); color: var(--red); }
-
-        .task-details {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-        }
-
-        .task-details p {
-            margin: 4px 0;
-        }
-
-        .task-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 12px;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-            width: auto;
-        }
-
-        /* Tables */
-        .table-wrapper {
-            overflow-x: auto;
-            padding: 0 20px 20px 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-
-        th {
-            color: var(--text-muted);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            background: var(--bg-hover);
-        }
-
-        tr:hover td {
-            background: rgba(34, 197, 94, 0.05);
-        }
-
-        /* Search */
-        .search-bar {
-            padding: 0 20px 20px 20px;
-        }
-
-        .search-input {
-            width: 100%;
-            max-width: 300px;
-            padding: 10px 14px;
-            background: var(--bg-hover);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 28px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: var(--green-primary);
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 24px;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        /* Filter Bar */
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            padding: 0 20px 20px 20px;
-        }
-
-        .filter-select {
-            padding: 10px 14px;
-            background: var(--bg-hover);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 14px;
-            min-width: 150px;
-        }
-
-        .badge {
-            background: var(--green-primary);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            color: var(--bg-dark);
-        }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .main-content {
-                padding: 16px;
-                margin-bottom: 60px;
-            }
-            
-            .task-header {
-                flex-direction: column;
-            }
-            
-            .filter-bar {
-                flex-direction: column;
-            }
-            
-            .filter-select {
-                width: 100%;
-            }
-        }
-
-        .bottom-nav {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border);
-            padding: 8px;
-            z-index: 100;
-        }
-
-        @media (max-width: 768px) {
-            .bottom-nav {
-                display: flex;
-                justify-content: space-around;
-            }
-            
-            .bottom-nav-item {
-                flex: 1;
-                text-align: center;
-                padding: 8px;
-                border-radius: 12px;
-                cursor: pointer;
-                color: var(--text-secondary);
-                font-size: 12px;
-            }
-            
-            .bottom-nav-item.active {
-                background: var(--green-primary);
-                color: var(--bg-dark);
-            }
-            
-            .bottom-nav-icon {
-                font-size: 20px;
-                display: block;
-                margin-bottom: 2px;
-            }
-        }
-    </style>
-</head>
-<body>
-
-<!-- Login Page -->
-<div id="login-page" class="auth-container">
-    <div class="auth-card">
-        <div class="logo">CLAIM TRACKER PRO</div>
-        <div class="auth-title">Welcome Back</div>
-        <div class="auth-subtitle">Sign in to manage your claim tasks</div>
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="login-username" placeholder="Enter your username">
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="login-password" placeholder="Enter your password" onkeypress="if(event.key==='Enter') login()">
-        </div>
-        <button class="btn btn-primary" onclick="login()">Sign In →</button>
-        <div id="login-error" class="error"></div>
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
-            <p style="font-size: 11px; color: var(--text-muted); text-align: center;">Demo Credentials:</p>
-            <p style="font-size: 11px; color: var(--text-muted); text-align: center;">Admin: admin / admin123 | Claim Team: claim1 / claim123</p>
-        </div>
-    </div>
-</div>
-
-<!-- Main App -->
-<div id="app-container" class="hidden">
-    <div class="topbar">
-        <div class="brand">🌿 Claim Tracker Pro | Karachi</div>
-        <div class="user-info">
-            <span id="current-username"></span>
-            <span class="role-badge" id="current-role"></span>
-            <button class="btn-logout" onclick="logout()">Logout</button>
-        </div>
-    </div>
-
-    <div class="layout">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
-                <span class="nav-icon">📊</span>
-                <span>Dashboard</span>
-            </div>
-            <div class="nav-item" data-page="tasks" onclick="showPage('tasks')">
-                <span class="nav-icon">📋</span>
-                <span>My Tasks</span>
-            </div>
-            <div id="admin-nav" class="hidden">
-                <div class="nav-section">Admin Panel</div>
-                <div class="nav-item" data-page="assign" onclick="showPage('assign')">
-                    <span class="nav-icon">➕</span>
-                    <span>Assign Task</span>
-                </div>
-                <div class="nav-item" data-page="all-tasks" onclick="showPage('all-tasks')">
-                    <span class="nav-icon">🗂️</span>
-                    <span>All Tasks</span>
-                </div>
-                <div class="nav-item" data-page="shops" onclick="showPage('shops')">
-                    <span class="nav-icon">🏪</span>
-                    <span>Shops</span>
-                </div>
-                <div class="nav-item" data-page="products" onclick="showPage('products')">
-                    <span class="nav-icon">📦</span>
-                    <span>Products</span>
-                </div>
-                <div class="nav-item" data-page="users" onclick="showPage('users')">
-                    <span class="nav-icon">👥</span>
-                    <span>Users</span>
-                </div>
-            </div>
-            <div class="nav-item" data-page="reports" onclick="showPage('reports')">
-                <span class="nav-icon">📈</span>
-                <span>Reports</span>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Dashboard Page -->
-            <div id="dashboard-page" class="page active">
-                <div class="page-header">
-                    <div class="page-title">Dashboard</div>
-                    <div class="page-desc">Welcome back! Here's your claims overview</div>
-                </div>
-                <div class="stats-grid" id="stats-container"></div>
-                <div id="recent-tasks-container"></div>
-            </div>
-
-            <!-- My Tasks Page -->
-            <div id="tasks-page" class="page">
-                <div class="page-header">
-                    <div class="page-title">My Tasks</div>
-                    <div class="page-desc">Tasks assigned to you</div>
-                </div>
-                <div id="my-tasks-container"></div>
-            </div>
-
-            <!-- Assign Task Page (Admin only) -->
-            <div id="assign-page" class="page">
-                <div class="page-header">
-                    <div class="page-title">Assign New Claim Task</div>
-                    <div class="page-desc">Create a claim request and assign to claim team member</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">Task Details</div>
-                    <div style="padding: 20px;">
-                        <div class="form-group">
-                            <label>Select Shop</label>
-                            <select id="assign-shop"></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Select Product</label>
-                            <select id="assign-product"></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Assign To (Claim Team)</label>
-                            <select id="assign-user"></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Issue Description</label>
-                            <textarea id="assign-description" rows="3" placeholder="Describe the issue with the product..."></textarea>
-                        </div>
-                        <button class="btn btn-primary" onclick="assignTask()">Assign Task →</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- All Tasks Page (Admin only) -->
-            <div id="all-tasks-page" class="page">
-                <div class="page-header">
-                    <div class="page-title">All Claim Tasks</div>
-                    <div class="page-desc">Manage and verify all claim tasks</div>
-                </div>
-                <div id="all-tasks-container"></div>
-            </div>
-
-            <!-- Shops Page (Admin only) -->
-            <div id="shops-page" class="page">
-                <div class="page-header">
-                    <div class="page-title">All Shops</div>
-                    <div class="page-desc">Manage all shops in the system</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <span>Shops Database</span>
-                        <button class="btn btn-primary btn-sm" onclick="openAddShopModal()">+ Add New Shop</button>
-                    </div>
-                    <div class="search-bar">
-                        <input type="text" class="search-input" id="shop-search" placeholder="🔍 Search shops..." onkeyup="filterShops()">
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>#</th><th>Shop Name</th><th>Booker</th><th>Added Date</th></tr>
-                            </thead>
-                            <tbody id="shops-table"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Products Page (Admin only) -->
-            <div id="products-page" class="page">
-                <div class="page-header">
-                    <div class="page-title">Products Catalog</div>
-                    <div class="page-desc">All available products for claims</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <span>Products Database</span>
-                        <button class="btn btn-primary btn-sm" onclick="openAddProductModal()">+ Add New Product</button>
-                    </div>
-                    <div class="search-bar">
-                        <input type="text" class="search-input" id="product-search" placeholder="🔍 Search products..." onkeyup="filterProducts()">
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>#</th><th>Product Name</th><th>Rate (PKR)</th><th>Actions</th></tr>
-                            </thead>
-                            <tbody id="products-table"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Users Page (Admin only) -->
-            <div id="users-page" class="page">
-                <div class="page-header">
-                    <div class="page-title">User Management</div>
-                    <div class="page-desc">Manage claim team members</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <span>Claim Team Accounts</span>
-                        <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Add User</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr><th>Username</th><th>Role</th><th>Tasks Assigned</th><th>Completed</th><th>Actions</th></tr>
-                            </thead>
-                            <tbody id="users-table"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reports Page -->
-            <div id="reports-page" class="page">
-                <div class="page-header">
-                    <div class="page-title">Reports</div>
-                    <div class="page-desc">Generate and export claim reports</div>
-                </div>
-                <div class="card">
-                    <div class="card-header">Filter Reports</div>
-                    <div class="filter-bar">
-                        <input type="date" class="filter-select" id="report-from">
-                        <input type="date" class="filter-select" id="report-to">
-                        <select class="filter-select" id="report-status">
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="resolved">Resolved</option>
-                            <option value="verified">Verified</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
-                        <button class="btn btn-primary btn-sm" onclick="generateReport()">Generate</button>
-                        <button class="btn btn-success btn-sm" onclick="exportReport()">📊 Export Excel</button>
-                    </div>
-                </div>
-                <div id="report-results"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bottom Navigation (Mobile) -->
-    <div class="bottom-nav">
-        <div class="bottom-nav-item" data-page="dashboard" onclick="showPage('dashboard')">
-            <span class="bottom-nav-icon">📊</span>
-            <span>Dash</span>
-        </div>
-        <div class="bottom-nav-item" data-page="tasks" onclick="showPage('tasks')">
-            <span class="bottom-nav-icon">📋</span>
-            <span>Tasks</span>
-        </div>
-        <div class="bottom-nav-item" data-page="reports" onclick="showPage('reports')">
-            <span class="bottom-nav-icon">📈</span>
-            <span>Reports</span>
-        </div>
-    </div>
-</div>
-
-<!-- Resolve Task Modal -->
-<div id="resolve-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">Resolve Claim Task</div>
-        <div class="form-group">
-            <label>Resolution Notes</label>
-            <textarea id="resolve-notes" rows="3" placeholder="Describe how the issue was resolved..."></textarea>
-        </div>
-        <div class="form-group">
-            <label>Upload Proof Photo</label>
-            <input type="file" id="resolve-photo" accept="image/*" onchange="previewPhoto(this)">
-            <div id="photo-preview" class="photo-preview"></div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('resolve-modal')">Cancel</button>
-            <button class="btn btn-success" onclick="submitResolution()">Submit Resolution</button>
-        </div>
-    </div>
-</div>
-
-<!-- View Task Modal -->
-<div id="view-modal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">Task Details</div>
-        <div id="view-modal-body"></div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('view-modal')">Close</button>
-        </div>
-    </div>
-</div>
-
-<!-- Add Shop Modal -->
-<div id="addshop-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">Add New Shop</div>
-        <div class="form-group">
-            <label>Shop Name</label>
-            <input type="text" id="new-shop-name" placeholder="Enter shop name">
-        </div>
-        <div class="form-group">
-            <label>Booker Name</label>
-            <input type="text" id="new-shop-booker" placeholder="Enter booker name">
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('addshop-modal')">Cancel</button>
-            <button class="btn btn-primary" onclick="addNewShop()">Add Shop</button>
-        </div>
-    </div>
-</div>
-
-<!-- Add Product Modal -->
-<div id="addproduct-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">Add New Product</div>
-        <div class="form-group">
-            <label>Product Name</label>
-            <input type="text" id="new-product-name" placeholder="Enter product name">
-        </div>
-        <div class="form-group">
-            <label>Rate (PKR)</label>
-            <input type="number" id="new-product-rate" placeholder="Enter rate in PKR">
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('addproduct-modal')">Cancel</button>
-            <button class="btn btn-primary" onclick="addNewProduct()">Add Product</button>
-        </div>
-    </div>
-</div>
-
-<!-- Add User Modal -->
-<div id="adduser-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">Add New User</div>
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="new-username" placeholder="Enter username">
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="new-password" placeholder="Enter password">
-        </div>
-        <div class="form-group">
-            <label>Role</label>
-            <select id="new-role">
-                <option value="claim">Claim Team</option>
-                <option value="admin">Admin</option>
-            </select>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('adduser-modal')">Cancel</button>
-            <button class="btn btn-primary" onclick="addNewUser()">Add User</button>
-        </div>
-    </div>
-</div>
-
-<script>
-// ============================================
-// SUPABASE CONFIGURATION
-// ============================================
-const SUPABASE_URL = 'https://tbngzujibzjmysfpiyaf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRibmd6dWppYnpqbXlzZnBpeWFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzM1NDIsImV4cCI6MjA5NDk0OTU0Mn0.dTPDxzMUhVWpmTXyi44O2ulGpa5oqwwQTPc8QwXIGk0';
-
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ============================================
-// GLOBAL VARIABLES
-// ============================================
-let currentUser = null;
-let currentResolveTask = null;
-let allShops = [];
-let allProducts = [];
-let allTasks = [];
-let allUsers = [];
-let shopFilter = '';
-let productFilter = '';
-let currentReportData = [];
-
-// ============================================
-// AUTHENTICATION
-// ============================================
-async function login() {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    const errorDiv = document.getElementById('login-error');
-    
-    if (!username || !password) {
-        errorDiv.textContent = 'Please enter username and password';
-        return;
-    }
-    
-    try {
-        const { data, error } = await supabase
-            .from('claim_users')
-            .select('*')
-            .eq('username', username)
-            .eq('password', password)
-            .single();
-        
-        if (error || !data) {
-            errorDiv.textContent = 'Invalid username or password';
-            return;
-        }
-        
-        currentUser = data;
-        
-        document.getElementById('login-page').style.display = 'none';
-        document.getElementById('app-container').classList.remove('hidden');
-        document.getElementById('current-username').textContent = currentUser.username;
-        document.getElementById('current-role').textContent = currentUser.role === 'admin' ? 'ADMIN' : 'CLAIM TEAM';
-        
-        const isAdmin = currentUser.role === 'admin';
-        document.getElementById('admin-nav').style.display = isAdmin ? 'block' : 'none';
-        
-        await loadAllData();
-        setupRealtime();
-        showPage('dashboard');
-        
-    } catch(e) {
-        errorDiv.textContent = 'Connection error. Please check your internet.';
-        console.error(e);
-    }
+import { useState, useMemo } from "react";
+
+// ─── REAL DATA FROM EXCEL ─────────────────────────────────────────────────────
+const SHOPS_BY_BOOKER = {
+  "WAQAS": ["ALI COM HUSSAINABAD KARACHI HALEEM - 03255885555","CYBER LAND ANCHOLI /WAQAS - 03092584410","H.T ATARI COMMUNICATION HUSSAINABAD - 0312-2508673","M FAISAL COM /WAQAS - 0341-2443224","UZAIR COMMUNICATION AZIZABAD - 0300-2868349","ZAMIN COM /WAQAS - 0300-8248460","7 STAR (FAHEEM) COM HUSSAINABAD - 03112000791","A M COMMUNICATION OPP MEMON FOUNDATION - 0311-2881865","A.I COMMUNICATION NEW SAREENA - 0321-2068682","AA COM HAIDRI NAGINA SQUARE - 0315-3152516","AA COMMUNICATION WAQAS NORTH NAZIMABAD - 03153152516","Aaliyan Com Shop New Sareena Mobile Market - 0310 1120359","AB Com country apartment gulzar-e-hijri - 0317 4735380","ABDUL WAHAB COMMUNICATION - 0346-0028006","ABID COM KOSAR NIYAZI NEAR IMAM BARGAH - 0314-3090176","ABID COM NORTH NAZIMABAD BHORI SOUP - 0314-5678977","ABRAR COM NORTH NAZIMABAD - 0321-2455618","ADEEL COM AZIZABAD - 0312-2334567","AF COM HUSSAINABAD - 0333-2211456","AG COM NEW SAREENA - 0344-3392178"],
+  "AHMED": ["Al Falah Com Liaqatabad Al Karam Square - 0309 2894296","AL MANSOOR COMM /AHMED - 0345-3331133","3 M COMMUNICATION B 1 AREA CATTLE CHOWK LIAQATABAD - 0334-3994525","7 Star Com Gol Market Nazimabad 3 Near K Electric - 0345 2226214","A TO Z 2 COMMUNICATION AL HASSAN CHOWK - 0325-2997785","A to Z Com Amir Golimar Phool Gali - 0345 2487178","AA Com 1 Arsalan Liaquat Chowk Golimar - 0313 1313633","AA Com 4 B1 Area Cattle Chowk - 0332 3214276","AA Com Asim Chandni Chowk Nazimabad 5 - 0320 2951781","AA Com Gol Tanki Pak Colony - 0300 0443964","AAA Com Gol Market Nazimabad Near Rashed Qorma - 0342 0808088","Aaliyan Com Liaqatabad No 4 Amjad Sabri Street - 0313 3344773","AAZ Com Opp Maa Com Al Hassan Nazmibad - 0313 2287783","AB Com Firdos Shopping Center Liaqatabad 6 Number - 0318 2952267","AB Com Shop ML Terrace Jamshed Road - 0300 9257212","Abdullah Com Pak Colony Gol Tanki - 0313 0202309","ADEEL COM NEAR TOTAL PUMP SULTANABAD - 0345-4823261","Adnan Accessories Shop Gate 4 Centeral Market - 0313 2397070","AE Com Golimar Near Yousuf Burger - 0340 2490332","Affan Communication Post Office Liaqatabad - 0333 3151228"],
+  "BEHZAD": ["A One com 2 shop mobile market Quaidabad Landhi - 0310 1110115","A To Z Battery Zone Rafiq Center Quaidabad - 0311 3814949","A1 COM QUAIDABAD SHOPPING CENTER LANDHI - 03072120801","AA com ice depot Landhi 6 - 03102690909","AAR COM KORANGI NO 4 - 03112919296","AAYAN COM ALLAH WALA TOWN KORANGI CROSSING - 0317 0380500","Abdul Kareem Com Adamjee Road Near Al Karam Textile - 0305 2270055","ABDULLAH COM GHOS PAK ROAD KORANGI - 0313-2304990","Abdullah mobile zone bhittai colony korangi - 03462470800","Abid Attock Com Zaki Sweets Bhittai Colony - 03342308001","Adil Accessories Point RR Mobile Market - 03453064831","Adil Com Shop Quaidabad Landhi - -","Adnan Com Main Sherpao Landhi - 03412714947","Afzal khan com agha mobile market Quaidabad - 03162307979","Agha mobile accessories Bilal colony korangi - 0316 8628057","Ahmed Com Mehran Town korangi - 316 2161811","Ahsan com near babo batti hotel korangi - 03172821948","Ahsan Com Babar Market Landhi - 0348 0284685","AK Com Near Bismillah Market Chiragh hotel Landhi - 0310 2253116","Al Habib Com Gul Ahmed Unit 6 - 0345 010000"],
+  "ZEESHAN": ["786 COM NEAR INDUS HOTEL DAWOOD POTA ROAD SADDAR - 03000675533","A&H COM EMPRES MARKET - 0332 3185138","AA COM JACKSON MARKET NEAR INSAF HOTEL KEEMARI - 0345-3050070","AA COM SHO MARKET NEAR NOORANI ARCADE GARDEN WEST - 0312-1204594","AB COM SHOP SHAMA MALL GARDEN WEST - 03171264391","Abbasi Com Garden Sho Market Shama Mobile - 0321 2856757","Abdul Ghani Com Near Golden Bakery Rino Center - 0320 8375489","Abdul Hadi Com Opp Dildar Center Saddar - 0319 5746900","ADIL JHOKIO COM NEAR GADAP - 03293438321","Adnan mobile near PNSC work shop Jackson keemari - 03472577007","AFFAN COM CHAKIWARA OPPOSITE LIYARI MALL - 0313-0263698","AFRIDI COM NEAR PESHAWARI HOTEL JACKSON MARKET - 0306 2524725","Afzal Com Tanoli Mobile Market Liyari - 03101379117","AG Enterprises Opp Adamjee Coaching Center Bihar Colony - 0323 3233860","AH COM OPP TALHA COM BEHAR COLONY - 03273121382","AIMAN COM GHOSIA ROAD NEAR GHOSIA MASJID LIYARI - 0321 8973826","Aizal Mobile Vista Mobile Mall 2 Sword Clifton - 03118059812","AJ COM NEAR JUBILEE HOTEL KEEMARI - 0313-2451781","AK COM KEEMARI NEAR SEHER COM - 0340-3892712","AL AMEEN COM SADDAR NEAR BANK AL HABIB - 0344-2990877"],
+  "SAQIB": ["AHSAN COM SHOP PARKVIEW APARTMENT - 0345 2962266","AM COM AL SYED SHOPPING MALL GULSHAN-E-IQBAL - +92 320 025470","AYESHA COM FARIYA MOBILE MALL GULSHAN-E-IQBAL - 0334-1220388","BAWANI COM OWN MOBILE MARKET 15-C GULSHAN - +92 345 244247","FIVE STAR COM CHANDNI CHOWK FIVE STAR APPARTMENT - 0322-3795266","GULSHAN MOBILE OPP HUZAIFA BAWANI PARK VIEW MOBILE - 0300-2456788","HASSAN COM MASHRIQ CENTER HASSAN SQAURE - 0300-2484610","HUZAIFA COM Asma garden isphani road Gulzar - 302 1599597","MADES.PK COM BASEMENT GALAXY KING MOBILE MALL - 0335-8247525","MAMA COM DATA APPARTMENT GULSHAN BLOCK 13 - 0300-9203288","MM COM GULSHAN NEAR BAIT UL MUKARRAM MASJID - 0318 3452211","MOTIWALA ACCESSORIES KING MOBILE MALL - 0303-2828956","MUSKAN COM FAIRYA MOBILE MALL GULSHAN - 0321-8778587","QAHIR COM VIEW MOBILE MALL ISPHANI RD - 03175430434","STAR COM MUZAMMIL GULSHAN CROWN CORNER BL - 0321-3316762","TALHA KHAN COM PARAMOUNT MOBILE MALL GULSHAN - 0311-2871839","TECHNO COM GULSHAN IQBAL - 0312-3344567","USMAN COM GULSHAN 13-D - 0313-2298765","WASEEM COM BLOCK 10 GULSHAN - 0345-2198765","ZAID COM GULSHAN IQBAL BLOCK 7 - 0316-3391234"],
+  "SAMI": ["ABDUL QADIR COM AL ASIF SHORAB GOTH - 0311 8400415","Ali Haider Com Basheer Chowk New Karachi - 0348 0054110","Anas Com Gulshan e Maymar Gate 1 - 0321 2396230","AREEB COM NORTH KHI 11J - 03136546218","H&S ENT SHOP NEW KARACHI SINDHI HOTEL - 0315 4599988","3 Brother Com Gulshan e Maymar - 0313 3489696","7 STAR COM GHODHRA - 0322-2384920","Abbasi Com Shadman - 0304 2117329","Abdul Razzaq Com Al Asif Sohrab Goth - 0332 2274311","Abdul Samad Com Al Asif Sohrab Goth - 0308 2890887","Abdullah Shah Com Faqira Goth Al Rehmat Market - 03453382298","ACME Com Basheer Chowk New Karachi - 0322 2535167","Adil Com Al Asif Sohrab Goth - 03226555886","Afridi Com Ajmair Nagri Near PSO Pump North Karachi - 0370 2517417","Ahmed Com Faqira Goth Near Gulshan e Maymar - 0325 6619105","AJ Com Gulshan e Maymar - 0333-2244567","AK COM NEW KARACHI SECTOR 11 - 0314-3309876","AL FALAH COM SOHRAB GOTH - 0345-2210034","AMAN COM MAYMAR GATE 2 - 0311-2299012","AN COM NEW KARACHI NALA STOP - 0312-2354781"],
+  "WASIB": ["11 To 11 Com Shop 5 Haroon Royal City Johar - 0300 8212345","7 Star Com Pehlawan Goth Johar - 0345 9224190","AA Com And Computer Saadi Town - 0321 8259159","AAM Com Ghazi Arcade Behind Bin Safeer Safoora Johar - 0333 3389589","Abbas Com Muneer Mobile Market Johar - 0315 8480158","Abdul Samad Com Sun View Mobile Mall Mosamiyat Johar - 0345 6262062","Abdul Waheed Com Pehlwan Goth Johar - 0312 3372107","Affan Com Bilawal Shah Noorani Goth - 0314 9130356","Agha Com New Mobile Market Near Zafreen Corner Safoora - 0332 3355205","AH Com Saadat Amruha Society Saadi Town - 322 3598211","Ahmed Com Saadi Town - 0345 0200677","Ahsan Com Near Al Falah Masjid PECHS Block 2 Tariq Rd - 0318 2230705","AJ Com Behind Tariq Center Main Tariq - 0335 3585764","AK Com Phelwan Goth Sindh Baloch Society Johar - 0300 8949734","AL COM SAADI TOWN NEAR PETROL PUMP - 0313-2295567","AMAN COM JOHAR MORE - 0344-2219876","AN COM PEHLWAN GOTH - 0316-3319872","AR COM GULISTAN-E-JOHAR - 0345-3340918","AS COM SAFOORA GOTH - 0312-2234561","ASAD COM GULISTAN JOHAR BLOCK 10 - 0311-2298761"],
+  "ALI": ["AL SADAT COM SHOP DEFANCE PH 2 - 0300 2222174","MADINA COM PHOTO STATE NEAR POST OFFICE DEFENCE - 0310 9426300","SM MOBILE SHOP OPP DEFANCE PH 2 - 0320 8251556","TECH UNION COM DEFANCE PHASE 2 - 0300 2253352","AA com 2 shah Rasool colony Clifton - 0320 9570614","AA COM TOUHEED COMMERCIAL DEFENCE PHASE 5 - 0304-1125215","Abbasi Com Rahat Milk Street Sunset Lane - 0300 8207058","Abdul hafeez mob repair shop Essa center near Defence - 0324 2020302","AFFAN COM MAIN GIZRI MARBLE MARKET - 0346 3056055","AGHA WAQAR COM BADA BUKHARI DEFENCE - 0310 2330280","Ahmed Com Near Tipu Burger Shopping Area - 03252100106","AKKS COM YOUSUF PLAZA MAIN GIZRI CLIFTON - 0331-2054717","AL LAKSHBANDI COM BADA BUKHARI DEFENCE - 0313 2006100","AL MAKKAH COM SUNSET LANE 1 DEFENCE PHASE 2 - 0301 2337795","ALI COM BADAR COMMERCIAL DEFENCE - 0331 2614207","ALI GENERAL STORE BADA BUKHARI DEFENCE - 0346 3413883","AYAN COM CHOTA BUKHARI DEFENCE - 308 2999900","AZ COM DEHLI COLONY - 03039111000","AZEEM COM MAIN GIZRI CLIFTON - 0304 5895691","BABA COM DEHLI COLONY NEAR VEGETABLES MARKET - 0344-2565249"],
+  "SAJID": ["ALI HAIDER COM 2 AL MADINA COLONY GULSHAN - 0304-7581840","COMPUTER 2 DAY NIPA CHORANGI GULSHAN - 0321 2297640","SM COM SAIMA DRIVE INN JOHAR MOR - 0325-2189050","TECHNOFY COMMUNICATION ABID TOWN NEAR IQRA UNIVERSITY - 0304-2352871","ZAIN COM KING MOBILE MALL - 0316-2758218","ADIL COM GULSHAN IQBAL - 0312-2287654","AF COM NEAR IQRA UNIVERSITY - 0313-3356781","AH COM ABID TOWN GULSHAN - 0344-2297543","AK COM MAIN GULSHAN ROAD - 0345-3309812","AL COM NIPA CHORANGI - 0316-2290345","AMAN COM BLOCK 10 GULSHAN - 0311-2278901","AN COM GULSHAN-E-IQBAL - 0312-3345678","AR COM SAIMA DRIVE INN - 0313-2219807","AS COM NEAR IQRA UNIVERSITY - 0314-3378901","ASAD COM ABID TOWN - 0315-2219834","ASIF COM GULSHAN IQBAL BLOCK 6 - 0345-2198451","AT COM NEAR NIPA - 0316-2290123","AY COM JOHAR MOR NEAR SAIMA - 0312-2344521","AZ COM ABID TOWN GULSHAN - 0313-3319876","BA COM GULSHAN MAIN ROAD - 0344-2298711"],
+  "AQIB": ["A One Com Haroonabad Market Road Orangi Town - 03451269410","A Rehman Mob raja mob market baldia 9no - 0305 3381627","A&B Com Near Paracha Road Qasba Colony - 03402828059","AA Com 2 Main Market Shershah - 0320 2002100","AA com 3 shop Shershah Market - 0322-3888080","Abaseen Com Mpr Colony Orangi Town - 0348 3481004","Abid Mobile Zone N3 Petrol Pump Mangopir Road Orangi - 0343 3232300","Adnan Com Front Off Ghosia Masjid Nusrat Bhutto Colony - 0333 3003946","Afridi Com Jinnah Road Shershah - 0341 2118462","Afridi Mobile Com Afridi Mobile Market Baldia - 0314 2055969","Aftab Com Near Safaid Chowk Near Mcb Bank Sec 11.5 - 0311 1225722","AG Com Main Street Paracha Stop Shershah - 0311 3190432","Aijaz Com Alamgir Road Shershah - 03140140433","AJ Com Nagori Market Shershah - 0316 2670526","AK Mobile Accessories Street Bladia 9 - 0345 2727115","Akhter Com Street Pahad Ganj Orangi Town - 0317 2951908","Al Harmain Com Main Market Road MPR Colony Orangi - 0314 1189887","AL KARAM COM 2ND STREET SHERSHAH - 0301 4759311","Ammar Com Muhammadi Road Shershah - 0344 9499997","Anas Com Pakistan Bazar Orangi Town - 0340 1260549"]
+};
+
+const PRODUCTS = [
+  {name:"SBT-901 DIVO",rate:1899},{name:"SBT-960 RUNNER",rate:1899},{name:"SBT-965 GAME ON",rate:1899},{name:"SG-265 LAZER CHARGER C TO C",rate:749},{name:"SG-235 TYPC C RELOAD 18W SUPER FAST CHARGER",rate:524},{name:"SC-003 SPACEX MICRO CABLE",rate:94},{name:"SC-003 SPACEX TYPE C CABLE",rate:114},{name:"SNB-425 URBAN NECKBAND",rate:1699},{name:"SPB-613 10000 MAH BOOSTER POWERBANK",rate:1699},{name:"SPB-626 MASTER 20000 MAH P-BANK",rate:3174},{name:"SPB-611 ROCCO 10000 MAH POWERBANK",rate:1574},{name:"SH-15 ENJOY HANDFREE",rate:219},{name:"SG-235 MICRO RELOAD 18W SUPER FAST CHARGER",rate:474},{name:"SPB-621 20000 MAH POWERBANK",rate:3549},{name:"SPB-603 10000 MAH DAZZLING POWER BANK",rate:2149},{name:"5C BATTERY FLIP 850 MAH",rate:199},{name:"SBT-912 MINI PRO",rate:2599},{name:"SHP-550 CARZY BASE HEADPHONE",rate:2199},{name:"SPB-629 EXPO 20000 MAH POWERBANK",rate:2749},{name:"SG-250 RACER PD 40W",rate:674},{name:"SC-003 SPACEX IPHONE CABLE",rate:114},{name:"SG-206 PLUG IN 2.4A 12W TYPE C",rate:449},{name:"SG-240 BOLD TYPE C CHARGER",rate:699},{name:"SBS-506 BANG SPEAKER",rate:999},{name:"SPB-606 MAH NOVA POWERBANK",rate:2049},{name:"SPB-601 10000 MAH POWER BANK",rate:2049},{name:"SG-206 PLUG IN 2.4A 12W MICRO",rate:424},{name:"SH-09 WAVES HANDFREE TYPE C",rate:449},{name:"SPB-604 10000 MAH EXPERT POWER BANK",rate:2349},{name:"SWM-575 AUDIA SERIES",rate:2999},{name:"SG-202 MICRO 12W READY",rate:374},{name:"SG-221 FLICK MICRO CHARGER",rate:399},{name:"SPB-693 EPIC 6000 MAH POWERBANK",rate:1049},{name:"SPB-619 10000 MAH REFLECT POWER BANK",rate:2099},{name:"SH-09 WAVES HANDFREE IPHONE",rate:749},{name:"SG-245 ELECTRO PD 25W",rate:949},{name:"SBT-950 ORBIT/ENC",rate:2999},{name:"SBS-503 BASH SPEAKER",rate:899},{name:"SC310 PD CABLE",rate:374},{name:"SC-310 C TO C CABLE",rate:324},{name:"SPB-694 6000 MAH ZAP POWERBANK",rate:1049},{name:"SG-221 FLICK TYPE C CHARGER",rate:449},{name:"SC-006 FORCE TYPEC CABLE",rate:184},{name:"SC-308 CORD C TO C CABLE",rate:319},{name:"SBT-900 BUZZER PRO",rate:2899},{name:"SC-308 CORD PD CABLE",rate:349},{name:"SPB-637 HONET 30000 MAH POWER BANK",rate:4499},{name:"SCR-420 ROADES TYPE-C CAR CHARGER",rate:434},{name:"SC-002 MONO MICRO CABLE",rate:124},{name:"SG-270 CRYSTAL 33W PD",rate:1099},{name:"SH-09 WAVES HANDFREE 3.5MM",rate:349},{name:"SH-05 LUNA STEREO EAR PHONE TYPE-C",rate:424},{name:"SG-245 ELECTRO C TO C 25W",rate:949},{name:"SPB-696 DARK 6000 MAH DEAL",rate:1049},{name:"SC005 PRIME TYPEC CABLE",rate:199},{name:"SPB-636 HECTOR 30000 MAH POWERBANK",rate:4099},{name:"SC001 TYPEC CABLE",rate:179},{name:"SC-007 ACTIVE TYPEC CABLE",rate:174},{name:"SPB-610 ROBO 10000 MAH POWER BANK",rate:3399},{name:"SPB-627 SPIKE 20000 MAH POWER BANK",rate:3699},{name:"SC-006 FORCE MICRO CABLE",rate:159},{name:"SCR-430 DRIVE-X 22.5W FAST TYPE C",rate:549},{name:"SH-07 NITRO EAR PHONE TYPE-C",rate:424},{name:"SC-004 STRONG TYPE C CABLE",rate:189},{name:"SCR-420 ROADES MICRO CAR CHARGER",rate:399},{name:"SPB-633 VOLTER 30000 MAH POWER BANK",rate:4349},{name:"SH-05 LUNA STEREO EAR PHONE 3.5MM",rate:299},{name:"SC-007 ACTIVE MICRO CABLE",rate:149},{name:"SBT-920 ULTRAPRO+",rate:2999},{name:"SC-006 FORCE IPHONE CABLE",rate:184},{name:"SC001 MICRO CABLE",rate:154},{name:"SBT-905 EGOPODS",rate:2399},{name:"SBT-907 MUSICAL PODS",rate:2499},{name:"SH-07 NITRO STEREO EAR PHONE 3.5MM",rate:299},{name:"SRC-888 ROUTER CABLE",rate:249},{name:"SC005 PRIME MICRO CABLE",rate:174},{name:"SH-14 DAMIX HANDFREE",rate:284},{name:"SH-07 NITRO EAR PHONE IPHONE",rate:449},{name:"SC005 PRIME IPHONE CABLE",rate:199},{name:"SC-004 STRONG IPHONE CABLE",rate:189},{name:"SC-312 FLUCH 67W CTOC CABLE",rate:449},{name:"SPB-695 CROSS 6000 MAH POWERBANK",rate:1049},{name:"SCR-430 DRIVE-X 22.5W FAST MICRO",rate:499},{name:"SCR-430 DRIVE-X 22.5W FAST IPHONE",rate:549},{name:"SPB-605 10000 MAH VOLT POWERBANK",rate:2049},{name:"SHC-330 USB HUB",rate:399},{name:"SCR-460 TARGET CAR CHARGER",rate:1199},{name:"SC-002 MONO IPHONE CABLE",rate:149},{name:"SC301 3IN1 CABLE",rate:364},{name:"SC-008 ATOMIC TYPE-C CABLE",rate:334},{name:"SPB-662 60000 MAH MEGA POWER BANK",rate:8999},{name:"SC-004 STRONG MICRO CABLE",rate:164},{name:"SPB-631 30000 MAH STORM POWER BANK",rate:3849},{name:"SC-309 FLUCH 27W PD CABLE",rate:499},{name:"SPB-691 6000 MAH PULSE POWERBANK",rate:1099},{name:"SC-118 PROTON METAL CABLE 100W",rate:574},{name:"SH-13 IMAX IPHONE HANDFREE",rate:474},{name:"SG-220 REVO IPHONE CHARGER",rate:449},{name:"SC-008 ATOMIC IPHONE CABLE",rate:334},{name:"SG-220 REVO TYPE-C CHARGER",rate:449},{name:"SC-009 PANTHER IPHONE CABLE",rate:264},{name:"SPB-617 10000 MAH E-LITE POWER BANK",rate:1624},{name:"SC-008 ATOMIC MICRO CABLE",rate:294},{name:"SPB-642 40000 MAH TURBO POWER BANK",rate:5499},{name:"SBT-918 FIXPRO",rate:2699},{name:"SH-10 SMART HANDFREE",rate:384},{name:"SPB-624 20000 MAH ULTRA-VR POWER BANK",rate:3449},{name:"SC-009 PANTHER MICRO CABLE",rate:229},{name:"SPB-602 VIGO POWER BANK",rate:2299},{name:"SBT-910 STARK-X",rate:2299},{name:"SH-06 KINGO HANDFREE",rate:424},{name:"SH24 MILO HANDFREE",rate:254},{name:"SPB-690 KOKO 6000 MAH",rate:874},{name:"SH-12 RELAX TYPEC HANDFREE",rate:424},{name:"SCR-450 EASY PD CAR CHARGER",rate:594},{name:"SC-009 PANTHER TYPEC CABLE",rate:264},{name:"SH-08 WARM-X HANDFREE",rate:389},{name:"SCR-440 SUGAR PD CAR",rate:649},{name:"SCR-440 SUGAR MICRO",rate:574},{name:"SH33 PILOT HANDFREE",rate:254},{name:"SG-205 GRIP 2.4A 12W MICRO",rate:424},{name:"SG-201 FLOW CHARGER 1.5A MICRO",rate:274}
+];
+
+// ─── USERS  ───────────────────────────────────────────────────────────────────
+// 10 claim users mapped to booker names, + 1 super user
+const CLAIM_USERS = [
+  {id:"c1",  username:"claim 1",  password:"claim1",  name:"Claim 1",  booker:"WAQAS"},
+  {id:"c2",  username:"claim 2",  password:"claim2",  name:"Claim 2",  booker:"AHMED"},
+  {id:"c3",  username:"claim 3",  password:"claim3",  name:"Claim 3",  booker:"BEHZAD"},
+  {id:"c4",  username:"claim 4",  password:"claim4",  name:"Claim 4",  booker:"ZEESHAN"},
+  {id:"c5",  username:"claim 5",  password:"claim5",  name:"Claim 5",  booker:"SAQIB"},
+  {id:"c6",  username:"claim 6",  password:"claim6",  name:"Claim 6",  booker:"SAMI"},
+  {id:"c7",  username:"claim 7",  password:"claim7",  name:"Claim 7",  booker:"WASIB"},
+  {id:"c8",  username:"claim 8",  password:"claim8",  name:"Claim 8",  booker:"ALI"},
+  {id:"c9",  username:"claim 9",  password:"claim9",  name:"Claim 9",  booker:"SAJID"},
+  {id:"c10", username:"claim 10", password:"claim10", name:"Claim 10", booker:"AQIB"},
+];
+const SUPER_USER = {id:"su", username:"momin", password:"123", name:"Momin", role:"superuser"};
+const ALL_USERS = [...CLAIM_USERS, SUPER_USER];
+
+function getUser(username, password) {
+  return ALL_USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password) || null;
 }
 
-function logout() {
-    currentUser = null;
-    document.getElementById('login-page').style.display = 'flex';
-    document.getElementById('app-container').classList.add('hidden');
-    document.getElementById('login-username').value = '';
-    document.getElementById('login-password').value = '';
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fmt(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-GB", {day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
 }
-
-// ============================================
-// DATA LOADING
-// ============================================
-async function loadAllData() {
-    await Promise.all([
-        loadShops(),
-        loadProducts(),
-        loadTasks(),
-        loadUsers()
-    ]);
+function daysAgo(iso) {
+  const d = Math.floor((Date.now() - new Date(iso)) / 86400000);
+  return d === 0 ? "Today" : d === 1 ? "Yesterday" : `${d} days ago`;
 }
+function uid() { return Math.random().toString(36).slice(2,9); }
 
-async function loadShops() {
-    const { data, error } = await supabase.from('claim_shops').select('*').order('id');
-    if (!error && data) {
-        allShops = data;
-        renderShops();
-        renderAssignDropdowns();
-    }
+const DEMO_PHOTO = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzBhMWEyZSIvPjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjI4MCIgaGVpZ2h0PSIxNDAiIHJ4PSI4IiBmaWxsPSIjMTExYzMwIi8+PGNpcmNsZSBjeD0iMTYwIiBjeT0iNzAiIHI9IjI0IiBmaWxsPSIjMDBkNGFhIiBvcGFjaXR5PSIwLjkiLz48dGV4dCB4PSIxNjAiIHk9Ijc4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjMDAwIiBmb250LXNpemU9IjIwIj7inIU8L3RleHQ+PHJlY3QgeD0iNjAiIHk9IjExMCIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIxMCIgcng9IjUiIGZpbGw9IiMwMGQ0YWEiIG9wYWNpdHk9IjAuNSIvPjxyZWN0IHg9IjkwIiB5PSIxMzAiIHdpZHRoPSIxNDAiIGhlaWdodD0iOCIgcng9IjQiIGZpbGw9IiMwMGQ0YWEiIG9wYWNpdHk9IjAuMjUiLz48dGV4dCB4PSIxNjAiIHk9IjE2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwZDRhYSIgZm9udC1zaXplPSIxMCIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSI+UkVQTEFDRU1FTlQgVkVSSUZJRUQ8L3RleHQ+PC9zdmc+";
+
+// ─── CSS ─────────────────────────────────────────────────────────────────────
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060b14;--s1:#0c1422;--s2:#111e33;--border:#1a2840;
+  --accent:#e84560;--green:#00d4aa;--yellow:#f5a623;
+  --text:#e2e8f0;--muted:#5a6b88;
+  --fh:'Syne',sans-serif;--fm:'Space Mono',monospace;
+  --r:10px;
 }
+body{background:var(--bg);color:var(--text);font-family:var(--fm);min-height:100vh}
+input,select,textarea,button{font-family:var(--fm)}
 
-async function loadProducts() {
-    const { data, error } = await supabase.from('claim_products').select('*').order('name');
-    if (!error && data) {
-        allProducts = data;
-        renderProducts();
-        renderAssignDropdowns();
-    }
-}
+/* ── LOGIN ── */
+.login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:28px;background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,69,96,0.08) 0%, transparent 70%)}
+.login-brand{text-align:center}
+.login-brand h1{font-family:var(--fh);font-size:2.2rem;font-weight:800;letter-spacing:-1px}
+.login-brand h1 span{color:var(--accent)}
+.login-brand p{color:var(--muted);font-size:0.78rem;margin-top:6px;letter-spacing:0.5px}
+.login-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:32px 28px;width:100%;max-width:380px}
+.login-box h2{font-family:var(--fh);font-size:1.1rem;font-weight:700;margin-bottom:20px;color:var(--text)}
+.login-error{background:rgba(232,69,96,0.1);border:1px solid rgba(232,69,96,0.3);border-radius:6px;padding:9px 12px;font-size:0.75rem;color:var(--accent);margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.field label{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px}
+.field input,.field select{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.82rem;padding:10px 13px;outline:none;transition:border-color 0.18s;width:100%}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.btn{font-family:var(--fm);font-size:0.76rem;padding:9px 18px;border-radius:7px;border:none;cursor:pointer;transition:all 0.18s;font-weight:700;letter-spacing:0.3px}
+.btn-primary{background:var(--accent);color:#fff;width:100%;margin-top:6px;padding:11px}
+.btn-primary:hover{background:#c9364f}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:5px 11px;font-size:0.69rem}
+.btn-green{background:var(--green);color:#000}
+.btn-green:hover{background:#00b894}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.hint-box{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;width:100%;max-width:380px}
+.hint-box h3{font-family:var(--fh);font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+.hint-row{display:flex;justify-content:space-between;font-size:0.7rem;padding:3px 0;border-bottom:1px solid var(--border)}
+.hint-row:last-child{border:none}
+.hint-row span:first-child{color:var(--muted)}
+.hint-row span:last-child{color:var(--text)}
 
-async function loadTasks() {
-    const { data, error } = await supabase.from('claim_tasks').select('*').order('assigned_at', { ascending: false });
-    if (!error && data) {
-        allTasks = data;
-        renderDashboard();
-        renderMyTasks();
-        if (currentUser?.role === 'admin') {
-            renderAllTasks();
-        }
-    }
-}
+/* ── LAYOUT ── */
+.header{background:var(--s1);border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--fh);font-size:1.15rem;font-weight:800;letter-spacing:-0.5px}
+.logo span{color:var(--accent)}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border);border-radius:999px;padding:5px 12px 5px 7px;font-size:0.72rem;cursor:pointer;transition:border-color 0.15s}
+.user-chip:hover{border-color:var(--accent)}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;font-family:var(--fh)}
+.av.su{background:var(--accent);color:#fff}
+.av.ct{background:var(--green);color:#000}
+.role-tag{font-size:0.62rem;padding:2px 8px;border-radius:999px;font-family:var(--fh);font-weight:700;letter-spacing:0.3px}
+.role-tag.su{background:rgba(232,69,96,0.15);color:var(--accent)}
+.role-tag.ct{background:rgba(0,212,170,0.12);color:var(--green)}
+.main{flex:1;padding:24px;max-width:1060px;margin:0 auto;width:100%}
+.page-title{font-family:var(--fh);font-size:1.5rem;font-weight:800;margin-bottom:2px}
+.page-sub{color:var(--muted);font-size:0.74rem;margin-bottom:24px}
 
-async function loadUsers() {
-    const { data, error } = await supabase.from('claim_users').select('*');
-    if (!error && data) {
-        allUsers = data;
-        if (currentUser?.role === 'admin') {
-            renderUsers();
-            renderAssignDropdowns();
-        }
-    }
-}
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px}
+.stat-n{font-family:var(--fh);font-size:1.9rem;font-weight:800}
+.stat-n.y{color:var(--yellow)}
+.stat-n.g{color:var(--green)}
+.stat-n.r{color:var(--accent)}
+.stat-l{font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:1px}
 
-// ============================================
-// REALTIME SUBSCRIPTION
-// ============================================
-function setupRealtime() {
-    supabase
-        .channel('tasks_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'claim_tasks' }, () => {
-            loadTasks();
-        })
-        .subscribe();
-}
+/* ── SECTION ── */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sec-title{font-family:var(--fh);font-size:0.9rem;font-weight:700}
+.divider{height:1px;background:var(--border);margin:24px 0}
 
-// ============================================
-// PAGE NAVIGATION
-// ============================================
-function showPage(pageName) {
-    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.getElementById(`${pageName}-page`).classList.add('active');
-    
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    document.querySelectorAll(`.nav-item[data-page="${pageName}"]`).forEach(item => item.classList.add('active'));
-    
-    document.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.remove('active'));
-    document.querySelectorAll(`.bottom-nav-item[data-page="${pageName}"]`).forEach(item => item.classList.add('active'));
-    
-    if (pageName === 'dashboard') renderDashboard();
-    if (pageName === 'tasks') renderMyTasks();
-    if (pageName === 'all-tasks' && currentUser?.role === 'admin') renderAllTasks();
-    if (pageName === 'shops') renderShops();
-    if (pageName === 'products') renderProducts();
-    if (pageName === 'users') renderUsers();
-    if (pageName === 'reports') {
-        const today = new Date().toISOString().slice(0,10);
-        const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
-        document.getElementById('report-from').value = weekAgo;
-        document.getElementById('report-to').value = today;
-        generateReport();
-    }
-    if (pageName === 'assign' && currentUser?.role === 'admin') {
-        renderAssignDropdowns();
-    }
-}
+/* ── TASK CARDS ── */
+.tasks{display:flex;flex-direction:column;gap:10px}
+.task{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:1fr auto;gap:10px;transition:border-color 0.18s}
+.task:hover{border-color:#263550}
+.task.pending{border-left:3px solid var(--yellow)}
+.task.resolved{border-left:3px solid var(--green)}
+.task-shop{font-family:var(--fh);font-weight:600;font-size:0.88rem;margin-bottom:3px}
+.task-meta{font-size:0.69rem;color:var(--muted);line-height:1.8}
+.task-meta b{color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:0.65rem;font-weight:700;font-family:var(--fh);white-space:nowrap}
+.badge.pending{background:rgba(245,166,35,0.12);color:var(--yellow)}
+.badge.resolved{background:rgba(0,212,170,0.1);color:var(--green)}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.actions{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+.proof-box{background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.18);border-radius:7px;padding:10px 12px;margin-top:8px;display:flex;gap:10px;align-items:flex-start}
+.proof-img{width:60px;height:44px;border-radius:4px;object-fit:cover;flex-shrink:0}
+.proof-text{font-size:0.68rem;color:var(--green);line-height:1.6}
+.proof-text b{display:block;font-family:var(--fh);font-size:0.75rem;margin-bottom:2px}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.78rem}
+.empty-icon{font-size:2rem;margin-bottom:8px}
 
-// ============================================
-// DASHBOARD
-// ============================================
-function renderDashboard() {
-    const myTasks = currentUser.role === 'admin' ? allTasks : allTasks.filter(t => t.assigned_to === currentUser.username);
-    const pending = myTasks.filter(t => t.status === 'pending').length;
-    const resolved = myTasks.filter(t => t.status === 'resolved').length;
-    const verified = myTasks.filter(t => t.status === 'verified').length;
-    
-    document.getElementById('stats-container').innerHTML = `
-        <div class="stat-card">
-            <div class="stat-label">Pending Tasks</div>
-            <div class="stat-value stat-pending">${pending}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Resolved</div>
-            <div class="stat-value stat-resolved">${resolved}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Verified</div>
-            <div class="stat-value stat-verified">${verified}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Tasks</div>
-            <div class="stat-value stat-total">${myTasks.length}</div>
-        </div>
-    `;
-    
-    const recentTasks = myTasks.slice(0, 5);
-    let html = `<div class="card"><div class="card-header">📋 Recent Tasks</div>`;
-    
-    if (recentTasks.length === 0) {
-        html += `<div class="empty-state"><div class="empty-icon">📭</div><div>No tasks yet</div></div>`;
-    } else {
-        html += `<div style="padding: 20px;">`;
-        recentTasks.forEach(task => {
-            const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
-            html += `
-                <div class="task-card">
-                    <div class="task-header">
-                        <span class="task-shop">${shop.name.substring(0, 50)}${shop.name.length > 50 ? '...' : ''}</span>
-                        <span class="task-status status-${task.status}">${task.status}</span>
-                    </div>
-                    <div class="task-details">
-                        <p>📦 Product: ${task.product_name}</p>
-                        <p>👤 Assigned to: ${task.assigned_to}</p>
-                        <p>📅 Assigned: ${new Date(task.assigned_at).toLocaleDateString()}</p>
-                    </div>
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-    html += `</div>`;
-    document.getElementById('recent-tasks-container').innerHTML = html;
-}
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;animation:fi 0.15s ease}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:26px;width:100%;max-width:460px;animation:su 0.2s ease;max-height:90vh;overflow-y:auto}
+@keyframes su{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-title{font-family:var(--fh);font-size:1.05rem;font-weight:800;margin-bottom:5px}
+.modal-sub{font-size:0.72rem;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:240px;overflow-y:auto;margin-bottom:14px}
+.shop-opt{border:1px solid var(--border);border-radius:7px;padding:10px;cursor:pointer;transition:all 0.14s;font-size:0.7rem}
+.shop-opt:hover{border-color:var(--accent)}
+.shop-opt.sel{border-color:var(--accent);background:rgba(232,69,96,0.07)}
+.shop-opt-name{font-family:var(--fh);font-size:0.75rem;font-weight:600;line-height:1.3}
+.shop-opt-phone{color:var(--muted);font-size:0.64rem;margin-top:2px}
+.photo-up{border:2px dashed var(--border);border-radius:7px;padding:20px;text-align:center;cursor:pointer;font-size:0.74rem;color:var(--muted);transition:border-color 0.15s}
+.photo-up:hover{border-color:var(--green);color:var(--green)}
+.photo-prev{width:100%;border-radius:7px;margin-top:8px;max-height:130px;object-fit:cover}
+textarea{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.78rem;padding:9px 12px;outline:none;transition:border-color 0.18s;width:100%;resize:vertical;min-height:70px}
+textarea:focus{border-color:var(--accent)}
+.search-bar{background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.78rem;padding:8px 12px;outline:none;width:100%;margin-bottom:10px}
+.search-bar:focus{border-color:var(--accent)}
+.product-list{max-height:200px;overflow-y:auto;margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
+.prod-opt{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:7px;padding:8px 11px;cursor:pointer;transition:all 0.14s;font-size:0.72rem}
+.prod-opt:hover{border-color:var(--accent)}
+.prod-opt.sel{border-color:var(--accent);background:rgba(232,69,96,0.07)}
+.prod-name{font-size:0.73rem;color:var(--text)}
+.prod-rate{font-family:var(--fh);font-size:0.72rem;color:var(--green);font-weight:600;white-space:nowrap;margin-left:8px}
 
-// ============================================
-// MY TASKS (Claim Team View)
-// ============================================
-function renderMyTasks() {
-    const myTasks = allTasks.filter(t => t.assigned_to === currentUser.username);
-    const container = document.getElementById('my-tasks-container');
-    
-    if (myTasks.length === 0) {
-        container.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📭</div><div>No tasks assigned to you</div></div></div>`;
-        return;
-    }
-    
-    let html = `<div class="card"><div class="card-header">📋 My Tasks</div><div style="padding: 20px;">`;
-    for (const task of myTasks) {
-        const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
-        html += `
-            <div class="task-card">
-                <div class="task-header">
-                    <span class="task-shop">${shop.name}</span>
-                    <span class="task-status status-${task.status}">${task.status}</span>
-                </div>
-                <div class="task-details">
-                    <p>📦 Product: ${task.product_name}</p>
-                    <p>📝 Issue: ${task.issue_description || 'No description'}</p>
-                    <p>📅 Assigned: ${new Date(task.assigned_at).toLocaleString()}</p>
-                </div>
-                <div class="task-actions">
-                    ${task.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="openResolveModal('${task.id}')">✓ Mark Resolved</button>` : ''}
-                    ${task.status === 'resolved' ? `<span style="color: var(--yellow);">⏳ Waiting for admin verification...</span>` : ''}
-                    <button class="btn btn-outline btn-sm" onclick="viewTaskDetails('${task.id}')">View Details</button>
-                </div>
-            </div>
-        `;
-    }
-    html += `</div></div>`;
-    container.innerHTML = html;
-}
+@media(max-width:580px){.main{padding:14px}.shop-grid{grid-template-columns:1fr}.task{grid-template-columns:1fr}}
+`;
 
-// ============================================
-// ALL TASKS (Admin View)
-// ============================================
-function renderAllTasks() {
-    const container = document.getElementById('all-tasks-container');
-    
-    if (allTasks.length === 0) {
-        container.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📭</div><div>No tasks created yet</div></div></div>`;
-        return;
-    }
-    
-    let html = `<div class="card"><div class="card-header">🗂️ All Claim Tasks</div><div style="padding: 20px;">`;
-    for (const task of allTasks) {
-        const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
-        html += `
-            <div class="task-card">
-                <div class="task-header">
-                    <span class="task-shop">${shop.name.substring(0, 60)}${shop.name.length > 60 ? '...' : ''}</span>
-                    <span class="task-status status-${task.status}">${task.status}</span>
-                </div>
-                <div class="task-details">
-                    <p>📦 Product: ${task.product_name}</p>
-                    <p>👤 Assigned to: ${task.assigned_to}</p>
-                    <p>📅 Assigned: ${new Date(task.assigned_at).toLocaleString()}</p>
-                    ${task.resolution_notes ? `<p>📝 Resolution: ${task.resolution_notes}</p>` : ''}
-                </div>
-                <div class="task-actions">
-                    ${task.status === 'resolved' ? `
-                        <button class="btn btn-success btn-sm" onclick="verifyTask('${task.id}', true)">✓ Verify & Close</button>
-                        <button class="btn btn-danger btn-sm" onclick="verifyTask('${task.id}', false)">✗ Reject</button>
-                    ` : ''}
-                    ${task.photo_url ? `<button class="btn btn-outline btn-sm" onclick="viewPhoto('${task.photo_url}')">📷 View Photo</button>` : ''}
-                    <button class="btn btn-outline btn-sm" onclick="viewTaskDetails('${task.id}')">View Details</button>
-                </div>
-            </div>
-        `;
-    }
-    html += `</div></div>`;
-    container.innerHTML = html;
-}
+// ─── APP ─────────────────────────────────────────────────────────────────────
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [loginForm, setLoginForm] = useState({username:"", password:""});
+  const [loginErr, setLoginErr] = useState("");
 
-// ============================================
-// TASK RESOLUTION
-// ============================================
-function openResolveModal(taskId) {
-    currentResolveTask = taskId;
-    document.getElementById('resolve-notes').value = '';
-    document.getElementById('photo-preview').innerHTML = '';
-    openModal('resolve-modal');
-}
+  // modals
+  const [assignModal, setAssignModal] = useState(false);
+  const [resolveModal, setResolveModal] = useState(null);
+  const [aForm, setAForm] = useState({shopRaw:"", memberId:"", productName:"", productRate:"", note:""});
+  const [rForm, setRForm] = useState({note:"", photo:null});
+  const [shopSearch, setShopSearch] = useState("");
+  const [prodSearch, setProdSearch] = useState("");
 
-function previewPhoto(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('photo-preview').innerHTML = `<img src="${e.target.result}" style="max-width: 100%; border-radius: 8px;">`;
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
+  const isSU = user?.role === "superuser";
 
-async function submitResolution() {
-    const notes = document.getElementById('resolve-notes').value;
-    const photoFile = document.getElementById('resolve-photo').files[0];
-    
-    if (!notes) {
-        alert('Please enter resolution notes');
-        return;
-    }
-    
-    let photoUrl = null;
-    if (photoFile) {
-        const reader = new FileReader();
-        photoUrl = await new Promise((resolve) => {
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsDataURL(photoFile);
-        });
-    }
-    
-    const { error } = await supabase
-        .from('claim_tasks')
-        .update({
-            status: 'resolved',
-            resolved_at: new Date().toISOString(),
-            resolution_notes: notes,
-            photo_url: photoUrl
-        })
-        .eq('id', currentResolveTask);
-    
-    if (error) {
-        alert('Error submitting resolution: ' + error.message);
-        return;
-    }
-    
-    closeModal('resolve-modal');
-    await loadTasks();
-    showPage('tasks');
-    alert('Task marked as resolved! Waiting for admin verification.');
-}
+  const myTasks = useMemo(() => {
+    if (!user) return [];
+    if (isSU) return tasks;
+    return tasks.filter(t => t.assignedTo === user.id);
+  }, [user, tasks, isSU]);
 
-// ============================================
-// TASK VERIFICATION (Admin)
-// ============================================
-async function verifyTask(taskId, approved) {
-    const status = approved ? 'verified' : 'rejected';
-    
-    const { error } = await supabase
-        .from('claim_tasks')
-        .update({
-            status: status,
-            verified_at: new Date().toISOString()
-        })
-        .eq('id', taskId);
-    
-    if (error) {
-        alert('Error updating task: ' + error.message);
-        return;
-    }
-    
-    await loadTasks();
-    alert(approved ? 'Task verified successfully!' : 'Task rejected.');
-}
+  const pending = myTasks.filter(t => t.status === "pending");
+  const resolved = myTasks.filter(t => t.status === "resolved");
 
-// ============================================
-// TASK ASSIGNMENT (Admin)
-// ============================================
-function renderAssignDropdowns() {
-    const shopSelect = document.getElementById('assign-shop');
-    const productSelect = document.getElementById('assign-product');
-    const userSelect = document.getElementById('assign-user');
-    
-    if (shopSelect) {
-        shopSelect.innerHTML = '<option value="">Select a shop...</option>' + 
-            allShops.map(s => `<option value="${s.id}">${s.name.substring(0, 70)}...</option>`).join('');
-    }
-    
-    if (productSelect) {
-        productSelect.innerHTML = '<option value="">Select a product...</option>' +
-            allProducts.map(p => `<option value="${p.name}">${p.name} (PKR ${p.rate})</option>`).join('');
-    }
-    
-    if (userSelect) {
-        const claimUsers = allUsers.filter(u => u.role === 'claim');
-        userSelect.innerHTML = '<option value="">Select claim team...</option>' +
-            claimUsers.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
-    }
-}
+  // All shops already assigned (pending only, to allow re-assign after resolve)
+  const assignedShops = new Set(tasks.filter(t => t.status === "pending").map(t => t.shopRaw));
 
-async function assignTask() {
-    const shopId = document.getElementById('assign-shop').value;
-    const productName = document.getElementById('assign-product').value;
-    const assignedTo = document.getElementById('assign-user').value;
-    const description = document.getElementById('assign-description').value;
-    
-    if (!shopId || !productName || !assignedTo) {
-        alert('Please fill all required fields');
-        return;
-    }
-    
-    const newTask = {
-        id: Date.now().toString(),
-        shop_id: parseInt(shopId),
-        product_name: productName,
-        assigned_to: assignedTo,
-        assigned_by: currentUser.username,
-        issue_description: description,
-        status: 'pending',
-        assigned_at: new Date().toISOString()
-    };
-    
-    const { error } = await supabase.from('claim_tasks').insert(newTask);
-    
-    if (error) {
-        alert('Error assigning task: ' + error.message);
-        return;
-    }
-    
-    document.getElementById('assign-description').value = '';
-    await loadTasks();
-    alert('Task assigned successfully!');
-    showPage('dashboard');
-}
+  // ── Login ──
+  function handleLogin(e) {
+    e.preventDefault();
+    const found = getUser(loginForm.username.trim(), loginForm.password.trim());
+    if (!found) { setLoginErr("Invalid username or password."); return; }
+    setLoginErr("");
+    setUser(found);
+  }
 
-// ============================================
-// VIEW TASK DETAILS
-// ============================================
-async function viewTaskDetails(taskId) {
-    const task = allTasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown Shop' };
-    const product = allProducts.find(p => p.name === task.product_name) || { name: task.product_name, rate: 'N/A' };
-    
-    let html = `<div style="padding: 4px;">`;
-    html += `<div class="form-group"><label>Shop</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${shop.name}</div></div>`;
-    html += `<div class="form-group"><label>Product</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.product_name} ${product.rate !== 'N/A' ? `(PKR ${product.rate})` : ''}</div></div>`;
-    html += `<div class="form-group"><label>Issue Description</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.issue_description || 'No description'}</div></div>`;
-    html += `<div class="form-group"><label>Status</label><div><span class="task-status status-${task.status}">${task.status.toUpperCase()}</span></div></div>`;
-    html += `<div class="form-group"><label>Assigned To</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.assigned_to}</div></div>`;
-    html += `<div class="form-group"><label>Assigned At</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${new Date(task.assigned_at).toLocaleString()}</div></div>`;
-    if (task.resolved_at) {
-        html += `<div class="form-group"><label>Resolved At</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${new Date(task.resolved_at).toLocaleString()}</div></div>`;
-    }
-    if (task.resolution_notes) {
-        html += `<div class="form-group"><label>Resolution Notes</label><div style="background: var(--bg-hover); padding: 10px; border-radius: 8px;">${task.resolution_notes}</div></div>`;
-    }
-    if (task.photo_url) {
-        html += `<div class="form-group"><label>Proof Photo</label><div><img src="${task.photo_url}" style="max-width: 100%; border-radius: 8px;"></div></div>`;
-    }
-    html += `</div>`;
-    
-    document.getElementById('view-modal-body').innerHTML = html;
-    openModal('view-modal');
-}
+  // ── Assign ──
+  function handleAssign() {
+    if (!aForm.shopRaw || !aForm.memberId || !aForm.productName) return;
+    setTasks(prev => [...prev, {
+      id: uid(), shopRaw: aForm.shopRaw, assignedTo: aForm.memberId,
+      productName: aForm.productName, productRate: aForm.productRate,
+      status: "pending", assignedAt: new Date().toISOString(),
+      resolvedAt: null, photo: null, note: aForm.note, resolveNote: "",
+    }]);
+    setAssignModal(false);
+    setAForm({shopRaw:"", memberId:"", productName:"", productRate:"", note:""});
+    setShopSearch(""); setProdSearch("");
+  }
 
-function viewPhoto(photoUrl) {
-    const win = window.open();
-    win.document.write(`<img src="${photoUrl}" style="max-width: 100%; background: #000;">`);
-}
+  // ── Resolve ──
+  function handleResolve() {
+    setTasks(prev => prev.map(t => t.id === resolveModal
+      ? {...t, status:"resolved", resolvedAt:new Date().toISOString(), photo: rForm.photo || DEMO_PHOTO, resolveNote: rForm.note}
+      : t));
+    setResolveModal(null);
+    setRForm({note:"", photo:null});
+  }
 
-// ============================================
-// SHOPS MANAGEMENT (Admin)
-// ============================================
-function filterShops() {
-    shopFilter = document.getElementById('shop-search').value.toLowerCase();
-    renderShops();
-}
+  function handlePhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setRForm(f => ({...f, photo: ev.target.result}));
+    reader.readAsDataURL(file);
+  }
 
-function renderShops() {
-    let filteredShops = allShops;
-    if (shopFilter) {
-        filteredShops = allShops.filter(s => s.name.toLowerCase().includes(shopFilter));
-    }
-    
-    const tbody = document.getElementById('shops-table');
-    if (!tbody) return;
-    
-    tbody.innerHTML = filteredShops.map((shop, idx) => `
-        <tr>
-            <td>${idx + 1}</td>
-            <td style="max-width: 500px;">${shop.name}</td>
-            <td><span class="badge">${shop.booker}</span></td>
-            <td style="color: var(--text-muted); font-size: 12px;">${new Date(shop.created_at).toLocaleDateString() || '2024-01-01'}</td>
-        </tr>
-    `).join('');
-    
-    if (filteredShops.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No shops found</td></tr>`;
-    }
-}
+  function getUserById(id) { return CLAIM_USERS.find(u => u.id === id); }
 
-function openAddShopModal() {
-    document.getElementById('new-shop-name').value = '';
-    document.getElementById('new-shop-booker').value = '';
-    openModal('addshop-modal');
-}
-
-async function addNewShop() {
-    const name = document.getElementById('new-shop-name').value.trim();
-    const booker = document.getElementById('new-shop-booker').value.trim();
-    
-    if (!name) {
-        alert('Please enter shop name');
-        return;
-    }
-    
-    const { error } = await supabase.from('claim_shops').insert({ name, booker: booker || 'UNASSIGNED' });
-    
-    if (error) {
-        alert('Error adding shop: ' + error.message);
-        return;
-    }
-    
-    await loadShops();
-    closeModal('addshop-modal');
-    alert('Shop added successfully!');
-}
-
-// ============================================
-// PRODUCTS MANAGEMENT (Admin)
-// ============================================
-function filterProducts() {
-    productFilter = document.getElementById('product-search').value.toLowerCase();
-    renderProducts();
-}
-
-function renderProducts() {
-    let filteredProducts = allProducts;
-    if (productFilter) {
-        filteredProducts = allProducts.filter(p => p.name.toLowerCase().includes(productFilter));
-    }
-    
-    const tbody = document.getElementById('products-table');
-    if (!tbody) return;
-    
-    tbody.innerHTML = filteredProducts.map((product, idx) => `
-        <tr>
-            <td>${idx + 1}</td>
-            <td style="font-weight: 500;">${product.name}</td>
-            <td style="color: var(--green-primary);">PKR ${product.rate.toLocaleString()}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteProduct(${product.id})">Delete</button></td>
-        </tr>
-    `).join('');
-}
-
-function openAddProductModal() {
-    document.getElementById('new-product-name').value = '';
-    document.getElementById('new-product-rate').value = '';
-    openModal('addproduct-modal');
-}
-
-async function addNewProduct() {
-    const name = document.getElementById('new-product-name').value.trim();
-    const rate = parseInt(document.getElementById('new-product-rate').value);
-    
-    if (!name || !rate) {
-        alert('Please enter product name and rate');
-        return;
-    }
-    
-    const { error } = await supabase.from('claim_products').insert({ name, rate });
-    
-    if (error) {
-        alert('Error adding product: ' + error.message);
-        return;
-    }
-    
-    await loadProducts();
-    closeModal('addproduct-modal');
-    alert('Product added successfully!');
-}
-
-async function deleteProduct(productId) {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    
-    const { error } = await supabase.from('claim_products').delete().eq('id', productId);
-    
-    if (error) {
-        alert('Error deleting product: ' + error.message);
-        return;
-    }
-    
-    await loadProducts();
-}
-
-// ============================================
-// USER MANAGEMENT (Admin)
-// ============================================
-function renderUsers() {
-    const claimUsers = allUsers.filter(u => u.role === 'claim');
-    const tbody = document.getElementById('users-table');
-    if (!tbody) return;
-    
-    tbody.innerHTML = claimUsers.map(user => {
-        const userTasks = allTasks.filter(t => t.assigned_to === user.username);
-        const completed = userTasks.filter(t => t.status === 'verified').length;
-        return `
-            <tr>
-                <td><span style="font-weight: 500;">${user.username}</span></td>
-                <td><span class="role-badge" style="background: var(--purple);">Claim Team</span></td>
-                <td>${userTasks.length}</td>
-                <td>${completed}</td>
-                <td><button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">Delete</button></td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function openAddUserModal() {
-    document.getElementById('new-username').value = '';
-    document.getElementById('new-password').value = '';
-    document.getElementById('new-role').value = 'claim';
-    openModal('adduser-modal');
-}
-
-async function addNewUser() {
-    const username = document.getElementById('new-username').value.trim();
-    const password = document.getElementById('new-password').value;
-    const role = document.getElementById('new-role').value;
-    
-    if (!username || !password) {
-        alert('Please enter username and password');
-        return;
-    }
-    
-    const { error } = await supabase.from('claim_users').insert({ username, password, role });
-    
-    if (error) {
-        alert('Error adding user: ' + error.message);
-        return;
-    }
-    
-    await loadUsers();
-    closeModal('adduser-modal');
-    alert('User added successfully!');
-}
-
-async function deleteUser(username) {
-    if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
-    
-    const { error } = await supabase.from('claim_users').delete().eq('username', username);
-    
-    if (error) {
-        alert('Error deleting user: ' + error.message);
-        return;
-    }
-    
-    await loadUsers();
-}
-
-// ============================================
-// REPORTS
-// ============================================
-async function generateReport() {
-    const fromDate = document.getElementById('report-from').value;
-    const toDate = document.getElementById('report-to').value;
-    const status = document.getElementById('report-status').value;
-    
-    let filtered = [...allTasks];
-    
-    if (fromDate) filtered = filtered.filter(t => t.assigned_at >= fromDate);
-    if (toDate) filtered = filtered.filter(t => t.assigned_at <= toDate + 'T23:59:59');
-    if (status !== 'all') filtered = filtered.filter(t => t.status === status);
-    
-    currentReportData = filtered;
-    
-    const container = document.getElementById('report-results');
-    
-    if (filtered.length === 0) {
-        container.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-icon">📭</div><div>No tasks found for selected criteria</div></div></div>`;
-        return;
-    }
-    
-    let html = `<div class="card"><div class="table-wrapper"><table><thead><tr>`;
-    html += `<th>#</th><th>Shop</th><th>Product</th><th>Assigned To</th><th>Status</th><th>Assigned Date</th><th>Resolved Date</th></tr></thead><tbody>`;
-    
-    for (let i = 0; i < filtered.length; i++) {
-        const task = filtered[i];
-        const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown' };
-        html += `
-            <tr>
-                <td>${i + 1}</td>
-                <td style="max-width: 250px;">${shop.name.substring(0, 50)}${shop.name.length > 50 ? '...' : ''}</td>
-                <td>${task.product_name}</td>
-                <td>${task.assigned_to}</td>
-                <td><span class="task-status status-${task.status}">${task.status}</span></td>
-                <td style="font-size: 12px;">${new Date(task.assigned_at).toLocaleDateString()}</td>
-                <td style="font-size: 12px;">${task.resolved_at ? new Date(task.resolved_at).toLocaleDateString() : '-'}</td>
-            </tr>
-        `;
-    }
-    
-    html += `</tbody></table></div></div>`;
-    container.innerHTML = html;
-}
-
-async function exportReport() {
-    if (currentReportData.length === 0) {
-        alert('Please generate a report first');
-        return;
-    }
-    
-    const rows = [['#', 'Shop Name', 'Product Name', 'Assigned To', 'Status', 'Assigned Date', 'Resolved Date', 'Resolution Notes']];
-    
-    currentReportData.forEach((task, idx) => {
-        const shop = allShops.find(s => s.id === task.shop_id) || { name: 'Unknown' };
-        rows.push([
-            idx + 1,
-            shop.name,
-            task.product_name,
-            task.assigned_to,
-            task.status,
-            new Date(task.assigned_at).toLocaleString(),
-            task.resolved_at ? new Date(task.resolved_at).toLocaleString() : '',
-            task.resolution_notes || ''
-        ]);
+  // build flat shop list for assign modal (all bookers combined, exclude already pending)
+  const allShopsFlat = useMemo(() => {
+    const list = [];
+    CLAIM_USERS.forEach(u => {
+      (SHOPS_BY_BOOKER[u.booker] || []).forEach(s => {
+        if (!assignedShops.has(s)) list.push({raw: s, booker: u.booker, userId: u.id, userName: u.name});
+      });
     });
-    
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    XLSX.utils.book_append_sheet(wb, ws, 'Claim Report');
-    XLSX.writeFile(wb, `Claim_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+    return list;
+  }, [tasks]);
+
+  // filter by selected member
+  const memberShops = useMemo(() => {
+    if (!aForm.memberId) return [];
+    const member = CLAIM_USERS.find(u => u.id === aForm.memberId);
+    if (!member) return [];
+    return (SHOPS_BY_BOOKER[member.booker] || [])
+      .filter(s => !assignedShops.has(s))
+      .filter(s => !shopSearch || s.toLowerCase().includes(shopSearch.toLowerCase()));
+  }, [aForm.memberId, shopSearch, tasks]);
+
+  const filteredProds = useMemo(() =>
+    PRODUCTS.filter(p => !prodSearch || p.name.toLowerCase().includes(prodSearch.toLowerCase())),
+  [prodSearch]);
+
+  // ─── LOGIN PAGE ────────────────────────────────────────────────────────────
+  if (!user) return (
+    <>
+      <style>{css}</style>
+      <div className="login-page">
+        <div className="login-brand">
+          <h1>CLAIM<span>DESK</span></h1>
+          <p>CLAIM MANAGEMENT SYSTEM</p>
+        </div>
+        <div className="login-box">
+          <h2>Sign In</h2>
+          {loginErr && <div className="login-error">{loginErr}</div>}
+          <form onSubmit={handleLogin}>
+            <div className="field">
+              <label>Username</label>
+              <input type="text" placeholder="e.g. momin or claim 1" autoComplete="username"
+                value={loginForm.username} onChange={e => setLoginForm(f => ({...f, username: e.target.value}))} />
+            </div>
+            <div className="field">
+              <label>Password</label>
+              <input type="password" placeholder="Password"
+                value={loginForm.password} onChange={e => setLoginForm(f => ({...f, password: e.target.value}))} />
+            </div>
+            <button type="submit" className="btn btn-primary">Login</button>
+          </form>
+        </div>
+        <div className="hint-box">
+          <h3>Login Credentials</h3>
+          <div className="hint-row"><span>Super User</span><span>momin / 123</span></div>
+          {CLAIM_USERS.map(u => (
+            <div className="hint-row" key={u.id}><span>{u.name}</span><span>{u.username} / {u.password}</span></div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
+  // ─── DASHBOARD ─────────────────────────────────────────────────────────────
+  const totalShopsInMyArea = isSU
+    ? CLAIM_USERS.reduce((a, u) => a + (SHOPS_BY_BOOKER[u.booker]?.length || 0), 0)
+    : (SHOPS_BY_BOOKER[CLAIM_USERS.find(u => u.id === user.id)?.booker] || []).length;
+
+  return (
+    <>
+      <style>{css}</style>
+      <div style={{display:"flex",flexDirection:"column",minHeight:"100vh"}}>
+        <div className="header">
+          <div className="logo">CLAIM<span>DESK</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div className={`role-tag ${isSU ? "su" : "ct"}`}>{isSU ? "SUPER USER" : "CLAIM AGENT"}</div>
+            <div className="user-chip" onClick={() => setUser(null)}>
+              <div className={`av ${isSU ? "su" : "ct"}`}>{user.name.slice(0,2).toUpperCase()}</div>
+              <span>{user.name}</span>
+              <span style={{color:"var(--accent)",fontSize:"0.6rem",marginLeft:2}}>↩</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="main">
+          <div className="page-title">{isSU ? "Super User Dashboard" : `${user.name} — Dashboard`}</div>
+          <div className="page-sub">
+            {isSU
+              ? "Assign claim replacement tasks to team members. Track pending and resolved status."
+              : `Booker Area: ${CLAIM_USERS.find(u=>u.id===user.id)?.booker} · ${totalShopsInMyArea} shops in your area`}
+          </div>
+
+          {/* Stats */}
+          <div className="stats">
+            <div className="stat"><div className={`stat-n ${pending.length>0?"y":"g"}`}>{pending.length}</div><div className="stat-l">Pending</div></div>
+            <div className="stat"><div className="stat-n g">{resolved.length}</div><div className="stat-l">Resolved</div></div>
+            <div className="stat"><div className="stat-n">{myTasks.length}</div><div className="stat-l">Total Tasks</div></div>
+            {isSU && <div className="stat"><div className="stat-n r">{CLAIM_USERS.length}</div><div className="stat-l">Agents</div></div>}
+            <div className="stat"><div className="stat-n">{totalShopsInMyArea}</div><div className="stat-l">Total Shops</div></div>
+          </div>
+
+          {/* Assign btn */}
+          {isSU && (
+            <div className="sec-head">
+              <div className="sec-title">Task Board</div>
+              <button className="btn btn-primary btn-sm" onClick={() => setAssignModal(true)}>+ Assign Task</button>
+            </div>
+          )}
+
+          {/* Pending Tasks */}
+          {pending.length > 0 && (
+            <>
+              {!isSU && <div className="sec-head"><div className="sec-title">🕐 Pending Tasks</div></div>}
+              <div className="tasks">
+                {pending.map(task => {
+                  const agent = getUserById(task.assignedTo);
+                  const [shopName, shopPhone] = task.shopRaw.includes(" - ") ? task.shopRaw.split(" - ") : [task.shopRaw, ""];
+                  return (
+                    <div className="task pending" key={task.id}>
+                      <div>
+                        <div className="task-shop">{shopName}</div>
+                        <div className="task-meta">
+                          {shopPhone && <><b>Phone:</b> {shopPhone}<br /></>}
+                          <b>Product:</b> {task.productName} — Rs. {task.productRate}<br />
+                          {isSU && <><b>Assigned To:</b> {agent?.name} ({agent?.booker})<br /></>}
+                          <b>Assigned:</b> {daysAgo(task.assignedAt)} · {fmt(task.assignedAt)}<br />
+                          {task.note && <><b>Note:</b> {task.note}</>}
+                        </div>
+                      </div>
+                      <div className="actions">
+                        <span className="badge pending"><span className="dot"/>PENDING</span>
+                        {!isSU && (
+                          <button className="btn btn-green btn-sm"
+                            onClick={() => { setResolveModal(task.id); setRForm({note:"",photo:null}); }}>
+                            Mark Resolved
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {resolved.length > 0 && <div className="divider"/>}
+            </>
+          )}
+
+          {/* Resolved Tasks */}
+          {resolved.length > 0 && (
+            <>
+              <div className="sec-head"><div className="sec-title">✅ Resolved Tasks</div></div>
+              <div className="tasks">
+                {resolved.map(task => {
+                  const agent = getUserById(task.assignedTo);
+                  const [shopName, shopPhone] = task.shopRaw.includes(" - ") ? task.shopRaw.split(" - ") : [task.shopRaw, ""];
+                  return (
+                    <div className="task resolved" key={task.id}>
+                      <div>
+                        <div className="task-shop">{shopName}</div>
+                        <div className="task-meta">
+                          {shopPhone && <><b>Phone:</b> {shopPhone}<br /></>}
+                          <b>Product Replaced:</b> {task.productName} — Rs. {task.productRate}<br />
+                          {isSU && <><b>Resolved By:</b> {agent?.name}<br /></>}
+                          <b>Assigned:</b> {fmt(task.assignedAt)}<br />
+                          <b>Resolved:</b> {fmt(task.resolvedAt)}
+                        </div>
+                        {task.photo && (
+                          <div className="proof-box">
+                            <img src={task.photo} alt="proof" className="proof-img"/>
+                            <div className="proof-text">
+                              <b>Proof of Resolution</b>
+                              {task.resolveNote || "Product replaced and verified on-site."}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="actions">
+                        <span className="badge resolved"><span className="dot"/>RESOLVED</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {myTasks.length === 0 && (
+            <div className="empty">
+              <div className="empty-icon">📋</div>
+              {isSU ? "No tasks yet. Use '+ Assign Task' to get started." : "No tasks assigned to you yet."}
+            </div>
+          )}
+        </div>
+
+        {/* ── ASSIGN MODAL ── */}
+        {assignModal && (
+          <div className="overlay" onClick={e => e.target === e.currentTarget && setAssignModal(false)}>
+            <div className="modal">
+              <div className="modal-title">Assign Replacement Task</div>
+              <div className="modal-sub">Select team member → pick shop → select claim product</div>
+
+              {/* Step 1: Member */}
+              <div className="field">
+                <label>1. Assign To (Claim Team Member)</label>
+                <select value={aForm.memberId} onChange={e => setAForm(f => ({...f, memberId: e.target.value, shopRaw:""}))}>
+                  <option value="">— Select member —</option>
+                  {CLAIM_USERS.map(u => <option key={u.id} value={u.id}>{u.name} (Booker: {u.booker})</option>)}
+                </select>
+              </div>
+
+              {/* Step 2: Shop */}
+              {aForm.memberId && (
+                <div className="field">
+                  <label>2. Select Shop</label>
+                  <input className="search-bar" placeholder="Search shop name..." value={shopSearch}
+                    onChange={e => setShopSearch(e.target.value)}/>
+                  <div className="shop-grid">
+                    {memberShops.length === 0
+                      ? <div style={{color:"var(--muted)",fontSize:"0.72rem",padding:"8px"}}>No shops available</div>
+                      : memberShops.slice(0,30).map((s,i) => {
+                          const [name, phone] = s.includes(" - ") ? s.split(" - ") : [s, ""];
+                          return (
+                            <div key={i} className={`shop-opt ${aForm.shopRaw === s ? "sel" : ""}`}
+                              onClick={() => setAForm(f => ({...f, shopRaw: s}))}>
+                              <div className="shop-opt-name">{name}</div>
+                              {phone && <div className="shop-opt-phone">{phone}</div>}
+                            </div>
+                          );
+                        })
+                    }
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Product */}
+              {aForm.shopRaw && (
+                <div className="field">
+                  <label>3. Select Claim Product</label>
+                  <input className="search-bar" placeholder="Search product..." value={prodSearch}
+                    onChange={e => setProdSearch(e.target.value)}/>
+                  <div className="product-list">
+                    {filteredProds.map((p,i) => (
+                      <div key={i} className={`prod-opt ${aForm.productName === p.name ? "sel" : ""}`}
+                        onClick={() => setAForm(f => ({...f, productName: p.name, productRate: p.rate}))}>
+                        <span className="prod-name">{p.name}</span>
+                        <span className="prod-rate">Rs. {p.rate}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Note */}
+              <div className="field">
+                <label>Note (optional)</label>
+                <textarea placeholder="Special instructions..." value={aForm.note}
+                  onChange={e => setAForm(f => ({...f, note: e.target.value}))}/>
+              </div>
+
+              <div className="modal-actions">
+                <button className="btn btn-ghost" onClick={() => { setAssignModal(false); setAForm({shopRaw:"",memberId:"",productName:"",productRate:"",note:""}); setShopSearch(""); setProdSearch(""); }}>Cancel</button>
+                <button className="btn btn-primary" style={{width:"auto"}}
+                  disabled={!aForm.shopRaw || !aForm.memberId || !aForm.productName}
+                  onClick={handleAssign}>Assign Task</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── RESOLVE MODAL ── */}
+        {resolveModal && (() => {
+          const task = tasks.find(t => t.id === resolveModal);
+          const [shopName] = task.shopRaw.includes(" - ") ? task.shopRaw.split(" - ") : [task.shopRaw, ""];
+          return (
+            <div className="overlay" onClick={e => e.target === e.currentTarget && setResolveModal(null)}>
+              <div className="modal">
+                <div className="modal-title">Mark as Resolved</div>
+                <div className="modal-sub">Confirm product replacement at <b style={{color:"var(--text)"}}>{shopName}</b>. Upload proof photo.</div>
+
+                <div className="field">
+                  <label>Product Replaced</label>
+                  <div style={{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:"7px",padding:"9px 12px",fontSize:"0.78rem",color:"var(--green)"}}>
+                    {task.productName} — Rs. {task.productRate}
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>Upload Proof Photo</label>
+                  <label className="photo-up">
+                    <input type="file" accept="image/*" style={{display:"none"}} onChange={handlePhoto}/>
+                    {rForm.photo
+                      ? <img src={rForm.photo} alt="preview" className="photo-prev"/>
+                      : <div>📸 Tap to upload photo<br/><span style={{fontSize:"0.65rem"}}>(or leave empty for demo image)</span></div>}
+                  </label>
+                </div>
+
+                <div className="field">
+                  <label>Resolution Note</label>
+                  <textarea placeholder="Describe what was done..." value={rForm.note}
+                    onChange={e => setRForm(f => ({...f, note: e.target.value}))}/>
+                </div>
+
+                <div className="modal-actions">
+                  <button className="btn btn-ghost" onClick={() => setResolveModal(null)}>Cancel</button>
+                  <button className="btn btn-green" onClick={handleResolve}>✓ Confirm Resolved</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    </>
+  );
 }
-
-// ============================================
-// MODAL HELPERS
-// ============================================
-function openModal(modalId) {
-    document.getElementById(modalId).classList.add('active');
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-}
-
-// Close modal when clicking outside
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
-    }
-});
-
-// Initialize
-function init() {
-    const today = new Date().toISOString().slice(0,10);
-    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
-    if (document.getElementById('report-from')) {
-        document.getElementById('report-from').value = weekAgo;
-        document.getElementById('report-to').value = today;
-    }
-}
-
-init();
-</script>
-</body>
-</html>
