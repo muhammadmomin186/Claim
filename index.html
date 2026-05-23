@@ -1064,7 +1064,7 @@ tr:hover td {
 const SUPABASE_URL = 'https://tbngzujibzjmysfpiyaf.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRibmd6dWppYnpqbXlzZnBpeWFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzM1NDIsImV4cCI6MjA5NDk0OTU0Mn0.dTPDxzMUhVWpmTXyi44O2ulGpa5oqwwQTPc8QwXIGk0';
 
-const supabase = supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = supabaseClient.createClient('https://tbngzujibzjmysfpiyaf.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRibmd6dWppYnpqbXlzZnBpeWFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzM1NDIsImV4cCI6MjA5NDk0OTU0Mn0.dTPDxzMUhVWpmTXyi44O2ulGpa5oqwwQTPc8QwXIGk0');
 
 // ============================================
 // GLOBAL VARIABLES
