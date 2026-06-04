@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claim Management System - With Database</title>
+    <title>Claim Management System</title>
     <style>
         * {
             margin: 0;
@@ -173,6 +173,34 @@
             display: none;
         }
 
+        /* ── Offline banner ── */
+        #offlineBanner {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: #ff9800;
+            color: white;
+            text-align: center;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            z-index: 99999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        #offlineBanner.show { display: block; }
+        body.offline-mode { padding-top: 40px; }
+
+        /* ── Mobile nav scroll ── */
+        .nav-buttons {
+            overflow-x: auto;
+            flex-wrap: nowrap !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+        .nav-buttons::-webkit-scrollbar { display: none; }
+        .nav-buttons button { white-space: nowrap; flex-shrink: 0; }
+
         @media (max-width: 768px) {
             body { padding: 8px !important; }
             .login-card, .dashboard-card { padding: 15px !important; border-radius: 10px !important; }
@@ -188,10 +216,20 @@
                 font-size: 12px;
                 padding: 8px;
             }
+            /* Bigger tap targets for action buttons in tables */
+            td button { min-height: 34px; padding: 6px 10px !important; margin: 2px !important; }
+            /* Stat cards 2-column on mobile */
+            .stats { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+            .stat-card h2 { font-size: 26px; }
         }
     </style>
 </head>
 <body>
+    <!-- Offline Banner -->
+    <div id="offlineBanner">
+        📴 You are offline — data will sync when connection returns
+    </div>
+
     <div class="container">
         <!-- Login Section -->
         <div id="loginSection">
@@ -253,6 +291,7 @@
                 <button onclick="showPage('parties')" id="navParties" class="admin-only">🏪 Parties</button>
                 <button onclick="showPage('products')" id="navProducts" class="admin-only">📦 Products</button>
                 <button onclick="showPage('reports')" id="navReports" class="admin-only">📊 Reports</button>
+                <button onclick="showPage('staff')" id="navStaff" class="admin-only">👥 Staff</button>
                 <button onclick="showPage('notifications')" id="navNotifications">🔔 Notifications <span id="notifCount" style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:12px;"></span></button>
             </div>
 
@@ -281,14 +320,56 @@
         // ============ DO NOT CHANGE BELOW THIS LINE ============
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, onSnapshot, orderBy, getDoc, Timestamp, deleteDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, updateDoc, doc, onSnapshot, orderBy, getDoc, Timestamp, deleteDoc, setDoc, writeBatch, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+
+        // ── Enable offline persistence ──────────────────────────────────────
+        // Firestore will cache data locally. Any writes made offline are queued
+        // and automatically synced to the server when connection is restored.
+        enableIndexedDbPersistence(db).catch((err) => {
+            if (err.code === 'failed-precondition') {
+                console.warn('Offline persistence failed: multiple tabs open. Only one tab can use persistence at a time.');
+            } else if (err.code === 'unimplemented') {
+                console.warn('This browser does not support offline persistence.');
+            }
+        });
+
+        // ── Offline / Online banner ─────────────────────────────────────────
+        const offlineBanner = document.getElementById('offlineBanner');
+        function updateOnlineStatus() {
+            if (!navigator.onLine) {
+                offlineBanner.classList.add('show');
+                document.body.classList.add('offline-mode');
+            } else {
+                offlineBanner.classList.remove('show');
+                document.body.classList.remove('offline-mode');
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus(); // check immediately on load
+
+        // Pre-load staff names so login dropdown shows real names
+        (async () => {
+            try {
+                const snap = await getDocs(collection(db, 'users'));
+                const loginRole = document.getElementById('loginRole');
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (data.role && data.name && data.role !== 'admin') {
+                        const opt = loginRole.querySelector('option[value="'+data.role+'"]');
+                        if (opt) opt.textContent = data.name;
+                    }
+                });
+            } catch(e) {} // silently fail if offline on first load
+        })();
         
-        // Role names
+        // Role names — loaded dynamically from Firebase users collection
+        // Fallbacks used until Firebase data is loaded
         const roleNames = {
             admin: 'Admin Manager',
             staff1: 'Claim Staff 1',
@@ -301,6 +382,19 @@
             staff8: 'Claim Staff 8',
             staff9: 'Claim Staff 9'
         };
+
+        // Load real staff names from Firebase and update roleNames
+        // Reads all docs in 'users' collection — covers both auth-created docs
+        // and the 'role_staffX' docs saved from the Staff Management page
+        async function loadStaffNames() {
+            try {
+                const snap = await getDocs(collection(db, 'users'));
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (data.role && data.name) roleNames[data.role] = data.name;
+                });
+            } catch(e) { console.warn('Could not load staff names:', e); }
+        }
         
         let currentUser = null;
         let currentUserRole = null;
@@ -3374,9 +3468,13 @@
                     btn.style.display = role === 'admin' ? 'inline-block' : 'none';
                 });
                 
-                // Initialize database
+                // Load real staff names from Firebase, then init DB
+                await loadStaffNames();
                 await initDatabase();
                 
+                // Update welcome name after loading real names
+                document.getElementById('userNameDisplay').innerText = roleNames[role];
+
                 // Setup realtime listeners
                 setupRealtimeListeners();
                 
@@ -3465,6 +3563,7 @@
             else if (page === 'notifications') await showNotifications(contentDiv);
             else if (page === 'reports') await showReports(contentDiv);
             else if (page === 'products') await showProducts(contentDiv);
+            else if (page === 'staff') await showStaff(contentDiv);
             
             // Update active button
             document.querySelectorAll('.nav-buttons button').forEach(btn => btn.classList.remove('active'));
@@ -3632,15 +3731,7 @@
                 '</select></div>',
                 '<div class="form-group"><label>Assign To:</label><select id="assignTo" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">',
                 '<option value="">Select Staff</option>',
-                '<option value="staff1">Claim Staff 1</option>',
-                '<option value="staff2">Claim Staff 2</option>',
-                '<option value="staff3">Claim Staff 3</option>',
-                '<option value="staff4">Claim Staff 4</option>',
-                '<option value="staff5">Claim Staff 5</option>',
-                '<option value="staff6">Claim Staff 6</option>',
-                '<option value="staff7">Claim Staff 7</option>',
-                '<option value="staff8">Claim Staff 8</option>',
-                '<option value="staff9">Claim Staff 9</option>',
+                ...['staff1','staff2','staff3','staff4','staff5','staff6','staff7','staff8','staff9'].map(r => '<option value="'+r+'">'+(roleNames[r]||r)+'</option>'),
                 '</select></div>',
                 '<div class="form-group"><label>Issue Description:</label><textarea id="description" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;"></textarea></div>',
                 '<button id="submitAssign" style="width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;margin-top:5px;">Assign Claim</button>'
@@ -4457,6 +4548,99 @@
                 renderRows(f);
             });
         }
+        // ── Staff Management Page ──────────────────────────────────────────
+        async function showStaff(container) {
+            container.innerHTML = '';
+            const card = document.createElement('div');
+            card.className = 'dashboard-card';
+
+            const header = document.createElement('div');
+            header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px;';
+            const h3 = document.createElement('h3');
+            h3.style.margin = '0';
+            h3.textContent = '👥 Staff Management';
+            header.appendChild(h3);
+            card.appendChild(header);
+
+            // Info note
+            const note = document.createElement('div');
+            note.style.cssText = 'background:#e8f4fd;border-left:4px solid #667eea;padding:10px 14px;border-radius:6px;font-size:13px;color:#333;margin-bottom:18px;';
+            note.innerHTML = '<strong>ℹ️ Note:</strong> Edit staff real names here. These names will appear everywhere in the app — dashboard, notifications, reports, and dropdowns.';
+            card.appendChild(note);
+
+            const staffRoles = ['staff1','staff2','staff3','staff4','staff5','staff6','staff7','staff8','staff9'];
+
+            // Load all user docs
+            let userDocs = {};
+            try {
+                const snap = await getDocs(collection(db, 'users'));
+                snap.forEach(d => { userDocs[d.data().role] = { id: d.id, ...d.data() }; });
+            } catch(e) {}
+
+            // Build table
+            const table = document.createElement('table');
+            table.style.cssText = 'width:100%;border-collapse:collapse;';
+            table.innerHTML = '<thead><tr style="background:#667eea;color:white;"><th style="padding:10px;text-align:left;">Slot</th><th style="padding:10px;text-align:left;">Name</th><th style="padding:10px;text-align:left;">Email</th><th style="padding:10px;text-align:left;">Phone</th><th style="padding:10px;text-align:center;">Action</th></tr></thead>';
+            const tbody = document.createElement('tbody');
+
+            staffRoles.forEach((role, i) => {
+                const udata = userDocs[role] || {};
+                const tr = document.createElement('tr');
+                tr.style.cssText = 'border-bottom:1px solid #eee;background:'+(i%2===0?'#fafafa':'white')+';';
+
+                const slotTd = document.createElement('td');
+                slotTd.style.cssText = 'padding:10px;font-weight:600;color:#667eea;white-space:nowrap;';
+                slotTd.textContent = role.toUpperCase();
+                tr.appendChild(slotTd);
+
+                ['name','email','phone'].forEach(field => {
+                    const td = document.createElement('td');
+                    td.style.cssText = 'padding:8px 10px;';
+                    const inp = document.createElement('input');
+                    inp.type = field === 'email' ? 'email' : 'text';
+                    inp.value = udata[field] || '';
+                    inp.placeholder = field === 'name' ? 'Real name' : field === 'email' ? 'Email' : 'Phone (optional)';
+                    inp.id = 'staff_' + role + '_' + field;
+                    inp.style.cssText = 'width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;box-sizing:border-box;';
+                    td.appendChild(inp);
+                    tr.appendChild(td);
+                });
+
+                const actionTd = document.createElement('td');
+                actionTd.style.cssText = 'padding:8px 10px;text-align:center;';
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = '💾 Save';
+                saveBtn.style.cssText = 'padding:7px 14px;font-size:12px;background:linear-gradient(135deg,#43e97b,#38f9d7);color:white;border:none;border-radius:6px;cursor:pointer;';
+                saveBtn.addEventListener('click', async () => {
+                    const name = document.getElementById('staff_' + role + '_name').value.trim();
+                    const email = document.getElementById('staff_' + role + '_email').value.trim();
+                    const phone = document.getElementById('staff_' + role + '_phone').value.trim();
+                    if (!name) { alert('Name is required'); return; }
+                    saveBtn.textContent = 'Saving...';
+                    saveBtn.disabled = true;
+                    try {
+                        // Save to users collection by role key
+                        await setDoc(doc(db, 'users', 'role_' + role), { role, name, email, phone }, { merge: true });
+                        // Update live roleNames so rest of app picks up immediately
+                        roleNames[role] = name;
+                        saveBtn.textContent = '✅ Saved';
+                        setTimeout(() => { saveBtn.textContent = '💾 Save'; saveBtn.disabled = false; }, 1500);
+                    } catch(e) {
+                        alert('Error saving: ' + e.message);
+                        saveBtn.textContent = '💾 Save';
+                        saveBtn.disabled = false;
+                    }
+                });
+                actionTd.appendChild(saveBtn);
+                tr.appendChild(actionTd);
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            card.appendChild(table);
+            container.appendChild(card);
+        }
+
         // Auto-create users on load
         // createDefaultUsers(); // Uncomment if needed
         
